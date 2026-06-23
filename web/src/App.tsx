@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { api, Dimension, FunctionCoverage, ProjectInfo, Report } from "./api";
+import {
+  api, Dimension, FunctionCoverage, getApiBase, ProjectInfo, Report,
+  sampleReportUrl, setApiBase, STATIC_DEMO,
+} from "./api";
 import { Terminal } from "./Terminal";
 
 const STATUS_COLOR: Record<string, string> = {
@@ -26,9 +29,7 @@ function DimensionCard({ d }: { d: Dimension }) {
   );
 }
 
-function pct(v: number | null) {
-  return v === null || v === undefined ? "—" : `${v}%`;
-}
+const pct = (v: number | null) => (v === null || v === undefined ? "—" : `${v}%`);
 
 function FunctionsTable({ funcs }: { funcs: FunctionCoverage[] }) {
   return (
@@ -62,6 +63,9 @@ function FunctionsTable({ funcs }: { funcs: FunctionCoverage[] }) {
 }
 
 export function App() {
+  const [backend, setBackend] = useState(getApiBase());
+  const live = !!backend || !STATIC_DEMO;
+
   const [path, setPath] = useState("");
   const [info, setInfo] = useState<ProjectInfo | null>(null);
   const [report, setReport] = useState<Report | null>(null);
@@ -73,54 +77,46 @@ export function App() {
   const logRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    api.default().then((d) => {
-      if (d.path) {
-        setPath(d.path);
-        api.discover(d.path).then(setInfo).catch(() => {});
-      }
-    });
-  }, []);
+    if (live) {
+      api.default()
+        .then((d) => { if (d.path) { setPath(d.path); return api.discover(d.path).then(setInfo); } })
+        .catch((e) => setErr(`backend unreachable: ${e.message ?? e}`));
+    } else {
+      fetch(sampleReportUrl())
+        .then((r) => r.json())
+        .then(setReport)
+        .catch(() => setErr("could not load bundled sample report"));
+    }
+  }, [live]);
 
   useEffect(() => {
     logRef.current?.scrollTo(0, logRef.current.scrollHeight);
   }, [logs]);
 
+  const connect = () => { setApiBase(backend.trim()); location.reload(); };
+
   const discover = async () => {
     setErr(null);
-    try {
-      setInfo(await api.discover(path));
-    } catch (e: any) {
-      setErr(String(e.message ?? e));
-    }
+    try { setInfo(await api.discover(path)); } catch (e: any) { setErr(String(e.message ?? e)); }
   };
 
   const run = async () => {
-    setErr(null);
-    setLogs([]);
-    setReport(null);
-    setRunning(true);
+    setErr(null); setLogs([]); setReport(null); setRunning(true);
     try {
       const { run_id, info } = await api.run(path, apply, provider);
       setInfo(info);
-      const es = new EventSource(`/api/runs/${run_id}/events`);
+      const es = new EventSource(api.eventsUrl(run_id));
       es.onmessage = (e) => {
         const d = JSON.parse(e.data);
         if (d.log) setLogs((l) => [...l, d.log]);
         if (d.status) {
           if (d.report) setReport(d.report);
           if (d.error) setErr(d.error);
-          setRunning(false);
-          es.close();
+          setRunning(false); es.close();
         }
       };
-      es.onerror = () => {
-        setRunning(false);
-        es.close();
-      };
-    } catch (e: any) {
-      setErr(String(e.message ?? e));
-      setRunning(false);
-    }
+      es.onerror = () => { setRunning(false); es.close(); };
+    } catch (e: any) { setErr(String(e.message ?? e)); setRunning(false); }
   };
 
   const termPath = info?.project_root || path;
@@ -130,33 +126,55 @@ export function App() {
       <header>
         <h1>pyverify</h1>
         <span className="tagline">multi-dimensional test coverage · line · branch · edges · mutation · assertions</span>
+        <span className={`mode ${live ? "modelive" : "modestatic"}`}>{live ? "LIVE" : "STATIC DEMO"}</span>
       </header>
+
+      {!live && (
+        <div className="notice">
+          Static showcase (GitHub Pages) — rendering a bundled sample report.
+          Interactive runs and the web terminal need the pyverify backend. Run
+          <code>pyverify serve</code> (or <code>./demo/run_demo.sh</code>) and paste its URL below to go live.
+        </div>
+      )}
 
       <section className="controls card">
         <input
-          value={path}
-          onChange={(e) => setPath(e.target.value)}
-          placeholder="/path/to/any/pytest/project"
+          value={backend}
+          onChange={(e) => setBackend(e.target.value)}
+          placeholder="backend URL (blank = static demo), e.g. http://localhost:8000"
           spellCheck={false}
+          style={{ flex: "1 1 280px" }}
         />
-        <button onClick={discover} disabled={!path}>Discover</button>
-        <select value={provider} onChange={(e) => setProvider(e.target.value)} title="LLM backend for generate/fix">
-          <option value="">measure only (no LLM)</option>
-          <option value="claude-code">claude-code (headless)</option>
-          <option value="anthropic">anthropic API</option>
-        </select>
-        <label className="chk">
-          <input type="checkbox" checked={apply} onChange={(e) => setApply(e.target.checked)} />
-          apply-mode (write tests + mutation-gate)
-        </label>
-        <button className="primary" onClick={run} disabled={!path || running}>
-          {running ? "Running…" : "Run verification"}
-        </button>
+        <button onClick={connect}>{backend ? "Connect" : "Use static"}</button>
       </section>
+
+      {live && (
+        <section className="controls card">
+          <input
+            value={path}
+            onChange={(e) => setPath(e.target.value)}
+            placeholder="/path/to/any/pytest/project"
+            spellCheck={false}
+          />
+          <button onClick={discover} disabled={!path}>Discover</button>
+          <select value={provider} onChange={(e) => setProvider(e.target.value)} title="LLM backend">
+            <option value="">measure only (no LLM)</option>
+            <option value="claude-code">claude-code (headless)</option>
+            <option value="anthropic">anthropic API</option>
+          </select>
+          <label className="chk">
+            <input type="checkbox" checked={apply} onChange={(e) => setApply(e.target.checked)} />
+            apply-mode
+          </label>
+          <button className="primary" onClick={run} disabled={!path || running}>
+            {running ? "Running…" : "Run verification"}
+          </button>
+        </section>
+      )}
 
       {err && <div className="error">{err}</div>}
 
-      {info && (
+      {info && live && (
         <section className="card info">
           <b>{info.project_root}</b> — source <code>{info.source_root}</code>,
           tests <code>{info.test_root}</code> · {info.source_count} source files ·{" "}
@@ -164,14 +182,8 @@ export function App() {
           <details>
             <summary>files</summary>
             <div className="filelists">
-              <div>
-                <h4>source</h4>
-                <ul>{info.source_files.map((f) => <li key={f}>{f}</li>)}</ul>
-              </div>
-              <div>
-                <h4>tests</h4>
-                <ul>{info.test_files.map((f) => <li key={f}>{f}</li>)}</ul>
-              </div>
+              <div><h4>source</h4><ul>{info.source_files.map((f) => <li key={f}>{f}</li>)}</ul></div>
+              <div><h4>tests</h4><ul>{info.test_files.map((f) => <li key={f}>{f}</li>)}</ul></div>
             </div>
           </details>
         </section>
@@ -202,19 +214,22 @@ export function App() {
         </>
       )}
 
-      <section className="card logs">
-        <h3>Run log</h3>
-        <div className="logbox" ref={logRef}>
-          {logs.length === 0 ? <span className="muted">no run yet</span> :
-            logs.map((l, i) => <div key={i} className={l.startsWith("!") ? "logerr" : ""}>{l}</div>)}
-        </div>
-      </section>
+      {live && (
+        <section className="card logs">
+          <h3>Run log</h3>
+          <div className="logbox" ref={logRef}>
+            {logs.length === 0 ? <span className="muted">no run yet</span> :
+              logs.map((l, i) => <div key={i} className={l.startsWith("!") ? "logerr" : ""}>{l}</div>)}
+          </div>
+        </section>
+      )}
 
-      <section className="card term-card">
-        <h3>Web terminal <span className="muted">({termPath || "."})</span></h3>
-        {termPath ? <Terminal key={termPath} path={termPath} /> :
-          <span className="muted">discover a project to open a shell</span>}
-      </section>
+      {live && termPath && (
+        <section className="card term-card">
+          <h3>Web terminal <span className="muted">({termPath})</span></h3>
+          <Terminal key={termPath} path={termPath} wsBase={backend} />
+        </section>
+      )}
 
       <footer>pyverify · LangGraph engine · vendored juansync tools</footer>
     </div>

@@ -2,7 +2,18 @@ import { useEffect, useRef } from "react";
 import { Terminal as XTerm } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 
-export function Terminal({ path }: { path: string }) {
+function wsUrl(wsBase: string, path: string): string {
+  let base = wsBase.trim();
+  if (base) {
+    base = base.replace(/^http/, "ws").replace(/\/$/, "");
+  } else {
+    const proto = location.protocol === "https:" ? "wss" : "ws";
+    base = `${proto}://${location.host}`;
+  }
+  return `${base}/ws/terminal?path=${encodeURIComponent(path)}`;
+}
+
+export function Terminal({ path, wsBase = "" }: { path: string; wsBase?: string }) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -18,10 +29,7 @@ export function Terminal({ path }: { path: string }) {
     term.open(ref.current);
     fit.fit();
 
-    const proto = location.protocol === "https:" ? "wss" : "ws";
-    const ws = new WebSocket(
-      `${proto}://${location.host}/ws/terminal?path=${encodeURIComponent(path)}`
-    );
+    const ws = new WebSocket(wsUrl(wsBase, path));
     ws.binaryType = "arraybuffer";
 
     const sendResize = () => {
@@ -48,7 +56,7 @@ export function Terminal({ path }: { path: string }) {
       ws.close();
       term.dispose();
     };
-  }, [path]);
+  }, [path, wsBase]);
 
   return <div className="terminal" ref={ref} />;
 }

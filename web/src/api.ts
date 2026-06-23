@@ -46,8 +46,32 @@ export interface Report {
   edges: EdgeRecord[];
 }
 
-async function jpost<T>(url: string, body: unknown): Promise<T> {
-  const r = await fetch(url, {
+// Static-demo build (GitHub Pages): no backend, render a bundled sample report.
+export const STATIC_DEMO = import.meta.env.VITE_STATIC_DEMO === "1";
+
+const DEFAULT_BASE = (import.meta.env.VITE_API_BASE as string) || "";
+const LS_KEY = "pyverify_api_base";
+
+export function getApiBase(): string {
+  return (typeof localStorage !== "undefined" && localStorage.getItem(LS_KEY)) || DEFAULT_BASE;
+}
+export function setApiBase(base: string): void {
+  if (typeof localStorage !== "undefined") {
+    if (base) localStorage.setItem(LS_KEY, base);
+    else localStorage.removeItem(LS_KEY);
+  }
+}
+/** A backend is "live" when a base URL is configured, or when not a static build. */
+export function hasBackend(): boolean {
+  return !!getApiBase() || !STATIC_DEMO;
+}
+
+function u(path: string): string {
+  return `${getApiBase()}${path}`;
+}
+
+async function jpost<T>(path: string, body: unknown): Promise<T> {
+  const r = await fetch(u(path), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -56,8 +80,12 @@ async function jpost<T>(url: string, body: unknown): Promise<T> {
   return r.json();
 }
 
+export function sampleReportUrl(): string {
+  return `${import.meta.env.BASE_URL}sample-report.json`;
+}
+
 export const api = {
-  default: () => fetch("/api/default").then((r) => r.json()),
+  default: () => fetch(u("/api/default")).then((r) => r.json()),
   discover: (path: string) => jpost<ProjectInfo>("/api/discover", { path }),
   run: (path: string, apply: boolean, provider: string | null) =>
     jpost<{ run_id: string; info: ProjectInfo }>("/api/run", {
@@ -66,7 +94,8 @@ export const api = {
       provider: provider || null,
     }),
   file: (root: string, path: string) =>
-    fetch(`/api/file?root=${encodeURIComponent(root)}&path=${encodeURIComponent(path)}`).then(
+    fetch(u(`/api/file?root=${encodeURIComponent(root)}&path=${encodeURIComponent(path)}`)).then(
       (r) => r.json()
     ),
+  eventsUrl: (runId: string) => u(`/api/runs/${runId}/events`),
 };

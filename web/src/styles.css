@@ -17,6 +17,11 @@ body {
 header { display: flex; align-items: baseline; gap: 1rem; margin-bottom: 1rem; }
 h1 { margin: 0; font-size: 1.6rem; letter-spacing: -0.02em; }
 .tagline { color: var(--muted); font-size: 0.85rem; }
+.mode { margin-left: auto; font-size: 0.7rem; font-weight: 700; padding: 0.2rem 0.55rem; border-radius: 5px; letter-spacing: 0.06em; }
+.modelive { background: #1a7f37; color: #fff; }
+.modestatic { background: #30363d; color: #adbac7; border: 1px solid var(--border); }
+.notice { background: #182030; border: 1px solid var(--border); border-left: 3px solid var(--accent); padding: 0.7rem 1rem; border-radius: 8px; margin-bottom: 1rem; color: #adbac7; font-size: 0.88rem; }
+.notice code { background: #0d1320; padding: 0.1rem 0.35rem; border-radius: 4px; color: var(--accent); margin: 0 0.15rem; }
 .card {
   background: var(--panel);
   border: 1px solid var(--border);

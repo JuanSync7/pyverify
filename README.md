@@ -96,6 +96,19 @@ The dashboard shows the dimension cards + per-function table, streams the run
 log live, and embeds a **web terminal** (a real shell in the project) so you can
 run `pytest` / `pyverify run .` from the browser. See [`demo/`](demo/).
 
+### GitHub Pages (static showcase)
+
+GitHub Pages serves static files only, so it hosts the **dashboard UI** with a
+bundled sample report — not the live engine or terminal (those need the
+backend). The `.github/workflows/pages.yml` workflow builds
+`web/` with `VITE_STATIC_DEMO=1` and `VITE_BASE=/pyverify/` and deploys it on
+push to `main`. Enable it once under **Settings → Pages → Source: GitHub
+Actions**. From the published page you can paste a `pyverify serve` URL into the
+**backend** field to switch the same UI into live mode against your own server.
+(Adjust `VITE_BASE` if the repo is renamed; a private-repo Pages site may be
+public depending on plan — the build contains only the frontend + demo data, no
+vendored content.)
+
 ### Apply-mode (closing the loop)
 
 With `generate.apply: true` and an LLM backend, `generate` writes the approved
