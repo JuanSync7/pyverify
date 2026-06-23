@@ -96,15 +96,22 @@ The dashboard shows the dimension cards + per-function table, streams the run
 log live, and embeds a **web terminal** (a real shell in the project) so you can
 run `pytest` / `pyverify run .` from the browser. See [`demo/`](demo/).
 
-### GitHub Pages (static showcase)
+### GitHub Pages (the wiki + static showcase)
 
-GitHub Pages serves static files only, so it hosts the **dashboard UI** with a
-bundled sample report — not the live engine or terminal (those need the
-backend). The `.github/workflows/pages.yml` workflow builds
-`web/` with `VITE_STATIC_DEMO=1` and `VITE_BASE=/pyverify/` and deploys it on
-push to `main`. Enable it once under **Settings → Pages → Source: GitHub
-Actions**. From the published page you can paste a `pyverify serve` URL into the
-**backend** field to switch the same UI into live mode against your own server.
+The published site is a **documentation wiki** that explains every concept,
+pipeline step, tool, and backend — plus a **Playground** that embeds the real
+dashboard. Because GitHub Pages serves static files only, the Playground there
+renders a bundled sample report (not the live engine or terminal — those need
+the backend). The `.github/workflows/pages.yml` workflow builds `web/` with
+`VITE_STATIC_DEMO=1` and `VITE_BASE=/pyverify/` and deploys it on push to
+`main`. Enable it once under **Settings → Pages → Source: GitHub Actions**. On
+the Playground you can paste a `pyverify serve` URL into the **backend** field
+to switch the same UI into live mode against your own server.
+
+The web app is a Vite/React SPA with a `HashRouter` (so deep links resolve on a
+static host with no 404 fallback) and a Vitest + Testing-Library suite
+(`npm test` in `web/`). The wiki content lives as a typed source-of-truth model
+in `web/src/wiki/content.ts`, so the docs can't silently drift from the engine.
 (Adjust `VITE_BASE` if the repo is renamed; a private-repo Pages site may be
 public depending on plan — the build contains only the frontend + demo data, no
 vendored content.)
