@@ -9,7 +9,7 @@ export function ToolsPage() {
     <article className="page">
       <h1 className="page-title">Deterministic tools</h1>
       <p className="page-lede">
-        Every measurement in pyverify comes from a plain Python tool, not a model. Typed adapters
+        Every measurement in pyverdex comes from a plain Python tool, not a model. Typed adapters
         (<code>tools/adapters.py</code>) shell out to each vendored tool, parse its JSON, and return
         a normalised <code>ToolResult</code>. These are the <strong>deterministic nodes</strong> of
         the graph.
@@ -76,6 +76,8 @@ export function ToolsPage() {
       <p>
         Each <Link to="/steps">pipeline step</Link> drives a subset of these, and the{" "}
         <Link to="/config">configuration</Link> sets the thresholds they&apos;re measured against.
+        These tools are vendored and deterministic; for the third-party libraries underneath them,
+        see the <Link to="/stack">Python stack</Link>.
       </p>
     </article>
   );

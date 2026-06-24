@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from pyverify.config import Config, GateMode, StageName
+from pyverdex.config import Config, GateMode, StageName
 
 
 def test_defaults():

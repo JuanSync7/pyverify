@@ -1,9 +1,9 @@
 name: Deploy web UI to GitHub Pages
 
-# Builds the pyverify dashboard as a static, backend-optional showcase and
+# Builds the pyverdex dashboard as a static, backend-optional showcase and
 # publishes it to GitHub Pages. The live engine + web terminal need the FastAPI
 # backend; the Pages build renders a bundled sample report and lets a visitor
-# point at their own `pyverify serve` URL.
+# point at their own `pyverdex serve` URL.
 #
 # NOTE: VITE_BASE must match the repo name for a project site
 # (https://<user>.github.io/<repo>/). Update it if the repo is renamed.
@@ -41,7 +41,7 @@ jobs:
       - run: npm ci
       - run: npm run build
         env:
-          VITE_BASE: /pyverify/
+          VITE_BASE: /pyverdex/
           VITE_OUT: dist
           VITE_STATIC_DEMO: "1"
       - uses: actions/upload-pages-artifact@v3

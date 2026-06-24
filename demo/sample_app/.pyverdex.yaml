@@ -1,4 +1,4 @@
-# Explicit pyverify config for the demo app (auto-detected if this file is absent).
+# Explicit pyverdex config for the demo app (auto-detected if this file is absent).
 paths:
   source_root: src
   test_root: tests

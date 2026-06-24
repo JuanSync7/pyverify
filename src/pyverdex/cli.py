@@ -1,12 +1,12 @@
-"""pyverify command-line interface.
+"""pyverdex command-line interface.
 
-    pyverify run [PROJECT_ROOT]      run the verification engine
-    pyverify resume                  resume after a human gate
-    pyverify version
+    pyverdex run [PROJECT_ROOT]      run the verification engine
+    pyverdex resume                  resume after a human gate
+    pyverdex version
 
 ``run`` walks the engine graph. When a gated stage raises an interrupt the run
 pauses; pass ``--yes`` to auto-approve all gates (CI), or resume later with
-``pyverify resume``.
+``pyverdex resume``.
 """
 
 from __future__ import annotations
@@ -87,7 +87,7 @@ def _drive(cfg: Config, first_input, thread: str, assume_yes: bool) -> dict:
             console.print("  auto-approving (--yes)")
             payload = Command(resume={"approve": True})
             continue
-        console.print(f"  paused. Resume with: [bold]pyverify resume "
+        console.print(f"  paused. Resume with: [bold]pyverdex resume "
                       f"--thread {thread} --approve[/bold]  (or --reject)")
         return state
 
@@ -98,11 +98,11 @@ def run(
     config: Optional[str] = typer.Option(None, "--config", "-c", help="Config YAML."),
     source: Optional[str] = typer.Option(None, "--source", help="Source root."),
     test: Optional[str] = typer.Option(None, "--test", help="Test root."),
-    thread: str = typer.Option("pyverify", "--thread", help="Run/thread id."),
+    thread: str = typer.Option("pyverdex", "--thread", help="Run/thread id."),
     yes: bool = typer.Option(False, "--yes", "-y", help="Auto-approve all gates."),
 ) -> None:
     cfg = _load_config(config, project_root, source, test)
-    console.print(f"[bold]pyverify[/bold] verifying [cyan]{cfg.abs_source_root}[/cyan]")
+    console.print(f"[bold]pyverdex[/bold] verifying [cyan]{cfg.abs_source_root}[/cyan]")
     state = _drive(cfg, initial_state(cfg), thread, yes)
     _print_log(state)
     _print_summary(state)
@@ -110,7 +110,7 @@ def run(
 
 @app.command()
 def resume(
-    thread: str = typer.Option("pyverify", "--thread", help="Run/thread id."),
+    thread: str = typer.Option("pyverdex", "--thread", help="Run/thread id."),
     config: Optional[str] = typer.Option(None, "--config", "-c"),
     project_root: Optional[str] = typer.Option(None, "--project-root"),
     approve: bool = typer.Option(False, "--approve", help="Approve the pending gate."),
@@ -133,16 +133,25 @@ def serve(
     project_root: Optional[str] = typer.Argument(None, help="Default project to load."),
     host: str = typer.Option("127.0.0.1", "--host"),
     port: int = typer.Option(8000, "--port"),
+    allow_origin: list[str] = typer.Option(
+        [], "--allow-origin",
+        help="Extra origin allowed to reach the API (e.g. https://your.wiki). "
+             "Loopback is always allowed; the bundled UI needs no flag.",
+    ),
 ) -> None:
-    """Launch the pyverify web app (dashboard + web terminal)."""
+    """Launch the pyverdex web app (dashboard + web terminal)."""
     import uvicorn
 
     from .server import create_app
 
     default = str(project_root) if project_root else None
-    console.print(f"[bold]pyverify[/bold] web UI on http://{host}:{port}"
+    app_ = create_app(default_project=default, host=host, allow_origins=list(allow_origin))
+    console.print(f"[bold]pyverdex[/bold] web UI on http://{host}:{port}"
                   + (f"  (project: {default})" if default else ""))
-    uvicorn.run(create_app(default_project=default), host=host, port=port, log_level="info")
+    # The same-origin UI fetches this automatically; you only need it to point a
+    # different-origin client (e.g. the hosted wiki) at this server.
+    console.print(f"[dim]access token:[/dim] [bold]{app_.state.auth_token}[/bold]")
+    uvicorn.run(app_, host=host, port=port, log_level="info")
 
 
 @app.command()
@@ -150,9 +159,9 @@ def version() -> None:
     from importlib.metadata import version as v
 
     try:
-        console.print(f"pyverify {v('pyverify')}")
+        console.print(f"pyverdex {v('pyverdex')}")
     except Exception:
-        console.print("pyverify (dev)")
+        console.print("pyverdex (dev)")
 
 
 def main() -> None:

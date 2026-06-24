@@ -1,4 +1,4 @@
-# pyverify
+# pyverdex
 
 A **multi-dimensional test-verification engine** for Python, built as a
 [LangGraph](https://langchain-ai.github.io/langgraph/) state machine.
@@ -34,10 +34,10 @@ flowchart LR
 ```
 
 - **Deterministic nodes** = the 10 vendored juansync tools (no LLM) behind
-  typed adapters in `pyverify/tools/`.
+  typed adapters in `pyverdex/tools/`.
 - **Judgment nodes** (`fix`, `generate`, `evaluate`, `integrate`) call an LLM
   with a **system prompt distilled from the original `SKILL.md` + rules + the
-  TDD protocol** (`pyverify/knowledge/`). Without `ANTHROPIC_API_KEY` they
+  TDD protocol** (`pyverdex/knowledge/`). Without `ANTHROPIC_API_KEY` they
   degrade to logged pass-throughs, so the deterministic measurement + report
   always run.
 - **Per-stage config-toggle gates**: each stage's `gate: gated|auto` decides
@@ -46,8 +46,8 @@ flowchart LR
 - **The audit⇄generate loop** keeps measuring after authoring tests, bounded by
   `loop.max_cycles`.
 
-Each `SKILL.md` flowchart is its own compiled subgraph (`pyverify/skills/`),
-composed into one engine in `pyverify/graph.py`.
+Each `SKILL.md` flowchart is its own compiled subgraph (`pyverdex/skills/`),
+composed into one engine in `pyverdex/graph.py`.
 
 ## Install
 
@@ -63,10 +63,10 @@ here. Populate them from your own checkout before running the engine:
 
 ```bash
 ./scripts/sync-vendor.sh /path/to/juansync-synapse
-# or: PYVERIFY_JUANSYNC_ROOT=/path/to/juansync-synapse ./scripts/sync-vendor.sh
+# or: PYVERDEX_JUANSYNC_ROOT=/path/to/juansync-synapse ./scripts/sync-vendor.sh
 ```
 
-`import pyverify` works without them; running the engine (and the test suite)
+`import pyverdex` works without them; running the engine (and the test suite)
 requires the sync.
 
 ## Use
@@ -75,14 +75,14 @@ requires the sync.
 
 ```bash
 # Verify a project (auto-approve all gates — good for CI):
-uv run pyverify run /path/to/project -c config/default.yaml --yes
+uv run pyverdex run /path/to/project -c config/default.yaml --yes
 
 # Stop at the first human gate, then resume after review:
-uv run pyverify run /path/to/project -c config/default.yaml --thread myrun
-uv run pyverify resume --thread myrun --approve     # or --reject
+uv run pyverdex run /path/to/project -c config/default.yaml --thread myrun
+uv run pyverdex resume --thread myrun --approve     # or --reject
 
 # Any pytest project works — layout is auto-detected (src/, package, or flat):
-uv run pyverify run /path/to/any/pytest/project --yes
+uv run pyverdex run /path/to/any/pytest/project --yes
 ```
 
 Outputs land in `<project>/project/coverage/report/coverage-report.{html,json}`
@@ -92,12 +92,12 @@ Outputs land in `<project>/project/coverage/report/coverage-report.{html,json}`
 
 ```bash
 ./demo/run_demo.sh                       # builds the UI, serves the demo on :8000
-uv run pyverify serve /path/to/project   # or point it at your own project
+uv run pyverdex serve /path/to/project   # or point it at your own project
 ```
 
 The dashboard shows the dimension cards + per-function table, streams the run
 log live, and embeds a **web terminal** (a real shell in the project) so you can
-run `pytest` / `pyverify run .` from the browser. See [`demo/`](demo/).
+run `pytest` / `pyverdex run .` from the browser. See [`demo/`](demo/).
 
 ### GitHub Pages (the wiki + static showcase)
 
@@ -106,9 +106,9 @@ pipeline step, tool, and backend — plus a **Playground** that embeds the real
 dashboard. Because GitHub Pages serves static files only, the Playground there
 renders a bundled sample report (not the live engine or terminal — those need
 the backend). The `.github/workflows/pages.yml` workflow builds `web/` with
-`VITE_STATIC_DEMO=1` and `VITE_BASE=/pyverify/` and deploys it on push to
+`VITE_STATIC_DEMO=1` and `VITE_BASE=/pyverdex/` and deploys it on push to
 `main`. Enable it once under **Settings → Pages → Source: GitHub Actions**. On
-the Playground you can paste a `pyverify serve` URL into the **backend** field
+the Playground you can paste a `pyverdex serve` URL into the **backend** field
 to switch the same UI into live mode against your own server.
 
 The web app is a Vite/React SPA with a `HashRouter` (so deep links resolve on a
@@ -136,7 +136,7 @@ actually improves. Two backends, selectable via `model.provider`:
 Everything is in one YAML (see [`config/default.yaml`](config/default.yaml)):
 tier thresholds (line 95/85/70, mutation kill 1.0, assertion 0.5/min-2,
 flakiness 2%/10-runs), the LLM model, the loop bound, and per-stage
-`enabled` + `gate`. Any field is also overridable by env (`PYVERIFY_*`).
+`enabled` + `gate`. Any field is also overridable by env (`PYVERDEX_*`).
 
 ## Status / scope
 

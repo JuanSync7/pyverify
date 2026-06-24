@@ -1,7 +1,7 @@
 """Human-in-the-loop gate helper.
 
 A gate is a LangGraph ``interrupt()`` that fires only when the stage's
-configured :class:`~pyverify.config.GateMode` is ``gated``. When ``auto``,
+configured :class:`~pyverdex.config.GateMode` is ``gated``. When ``auto``,
 the gate is transparent. On resume, the orchestrator passes a decision via
 ``Command(resume=<decision>)``; ``{"approve": true}`` proceeds.
 """

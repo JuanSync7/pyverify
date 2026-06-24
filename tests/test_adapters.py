@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from pyverify.tools import adapters
+from pyverdex.tools import adapters
 
 REPO = Path(__file__).resolve().parents[1]
 # Use a vendored tool's own source as a stable, self-contained target.
-TARGET = REPO / "src" / "pyverify" / "tools" / "vendored" / "branch_mapper"
+TARGET = REPO / "src" / "pyverdex" / "tools" / "vendored" / "branch_mapper"
 
 
 def test_run_edges_finds_cross_package_calls():
@@ -40,7 +40,7 @@ def test_run_lint_ruff_clean_on_vendored():
 
 def test_tool_result_semantics():
     # rc=2 -> not ok; rc=1 -> findings but ok
-    from pyverify.tools.adapters import ToolResult
+    from pyverdex.tools.adapters import ToolResult
 
     assert ToolResult(tool="x", returncode=0).ok
     assert ToolResult(tool="x", returncode=1).ok

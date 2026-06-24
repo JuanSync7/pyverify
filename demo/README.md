@@ -1,6 +1,6 @@
-# pyverify demo
+# pyverdex demo
 
-A self-contained walkthrough: a small `shop` package wired into the pyverify
+A self-contained walkthrough: a small `shop` package wired into the pyverdex
 web app so you can see the multi-dimensional coverage metrics and drive tests
 from a browser terminal.
 
@@ -35,19 +35,19 @@ default.
   coverage climb on the next loop.
 - **Web terminal** — a real shell in `demo/sample_app`. Try:
   ```
-  uv run pyverify run . --yes
+  uv run pyverdex run . --yes
   pytest -q
   ```
 
 ## Wiring your own project
 
-The same works for any pytest project — pyverify auto-detects `src/`-layout,
+The same works for any pytest project — pyverdex auto-detects `src/`-layout,
 single-package, or flat layouts. Either type its path into the dashboard, or:
 
 ```bash
-uv run pyverify serve /path/to/your/project
+uv run pyverdex serve /path/to/your/project
 ```
 
-Drop a `.pyverify.yaml` (see `demo/sample_app/.pyverify.yaml`) or a
-`[tool.pyverify]` table in your `pyproject.toml` to pin thresholds, the loop
+Drop a `.pyverdex.yaml` (see `demo/sample_app/.pyverdex.yaml`) or a
+`[tool.pyverdex]` table in your `pyproject.toml` to pin thresholds, the loop
 bound, or the LLM backend.

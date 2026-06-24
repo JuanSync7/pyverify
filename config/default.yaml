@@ -1,6 +1,6 @@
-# pyverify engine configuration.
+# pyverdex engine configuration.
 # All values shown are the built-in defaults; override only what you need.
-# Env overrides: PYVERIFY_PROJECT_ROOT, PYVERIFY_MODEL__MODEL, etc.
+# Env overrides: PYVERDEX_PROJECT_ROOT, PYVERDEX_MODEL__MODEL, etc.
 
 project_root: "."
 
@@ -48,7 +48,7 @@ generate:
   restrengthen_attempts: 1           # re-author cycles when mutants survive
   mutation_max_lines: 20
   mutation_timeout: 30.0
-  generated_subdir: "pyverify_generated"
+  generated_subdir: "pyverdex_generated"
 
 # Per-stage enable + gate mode. gate: "gated" => human approval (interrupt);
 # "auto" => proceed unattended. This is the "per-stage config toggle".

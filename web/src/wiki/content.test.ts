@@ -5,6 +5,8 @@ import {
   BACKENDS,
   DIMENSIONS,
   getStep,
+  PACKAGE_GROUPS,
+  PACKAGES,
   PIPELINE,
   STEPS,
   THRESHOLDS,
@@ -87,5 +89,39 @@ describe("wiki content model", () => {
     }
     expect(APPLY_MODE_LOOP.mermaid).toMatch(/mutation/i);
     expect(AUDIT_GENERATE_LOOP.mermaid).toMatch(/coverage met/i);
+  });
+
+  it("groups the Python stack into non-empty layers, each package fully described", () => {
+    expect(PACKAGE_GROUPS.length).toBeGreaterThanOrEqual(3);
+    for (const g of PACKAGE_GROUPS) {
+      expect(g.title.length).toBeGreaterThan(0);
+      expect(g.blurb.length).toBeGreaterThan(0);
+      expect(g.packages.length).toBeGreaterThan(0);
+      for (const p of g.packages) {
+        expect(p.name).toMatch(/^[a-z0-9][a-z0-9-]*$/); // a real PyPI name, no prose
+        expect(p.role.length).toBeGreaterThan(0);
+        expect(p.seenIn.length).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it("highlights the load-bearing packages (langgraph, pydantic, coverage, pytest, typer)", () => {
+    const names = PACKAGES.map((p) => p.name);
+    for (const n of ["langgraph", "pydantic", "coverage", "pytest", "typer"]) {
+      expect(names).toContain(n);
+    }
+  });
+
+  it("never lists mutmut or detect-secrets — pyverdex vendors its own measurement", () => {
+    // The engine ships a custom AST mutation runner and entropy secret scanner;
+    // surfacing these libraries here would imply a dependency that does not exist.
+    const names = PACKAGES.map((p) => p.name);
+    expect(names).not.toContain("mutmut");
+    expect(names).not.toContain("detect-secrets");
+  });
+
+  it("has no duplicate packages across layers", () => {
+    const names = PACKAGES.map((p) => p.name);
+    expect(new Set(names).size).toBe(names.length);
   });
 });

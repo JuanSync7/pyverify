@@ -3,7 +3,7 @@
 The deterministic nodes (lint/audit/measurement) never touch this. Only the
 authoring/judgment nodes — fix, generate, evaluate-rationale, integrate —
 call an LLM, always with a system prompt distilled from the vendored skill
-docs (see :mod:`pyverify.knowledge`).
+docs (see :mod:`pyverdex.knowledge`).
 """
 
 from __future__ import annotations

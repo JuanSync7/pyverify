@@ -71,7 +71,7 @@ def load_tool_doc(tool: str) -> str:
 
 
 _PREAMBLE = (
-    "You are a node in pyverify, a deterministic LangGraph test-verification "
+    "You are a node in pyverdex, a deterministic LangGraph test-verification "
     "engine. You execute exactly one skill. Measurement is done by separate "
     "deterministic tools; your job is the judgment/authoring step only. Obey "
     "the skill rules and protocol contracts below verbatim. Never weaken, "

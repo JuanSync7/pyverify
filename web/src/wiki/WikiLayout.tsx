@@ -19,7 +19,7 @@ export function WikiLayout() {
           ☰
         </button>
         <Link to="/" className="brand" onClick={() => setOpen(false)}>
-          pyverify
+          pyverdex
         </Link>
         <span className="brand-tag">multi-dimensional test verification</span>
         <a className="gh-link" href={GITHUB_URL} target="_blank" rel="noreferrer">

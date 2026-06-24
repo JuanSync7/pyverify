@@ -103,14 +103,14 @@ export function ConfigPage() {
 
       <h2>Environment overrides</h2>
       <p>
-        Every field maps to a <code>PYVERIFY_</code>-prefixed variable; nested keys use a double
+        Every field maps to a <code>PYVERDEX_</code>-prefixed variable; nested keys use a double
         underscore. A few examples:
       </p>
       <pre>
-        <code>{`PYVERIFY_PROJECT_ROOT=/path/to/project
-PYVERIFY_MODEL__PROVIDER=claude-code
-PYVERIFY_MODEL__MODEL=claude-sonnet-4-6
-PYVERIFY_GENERATE__APPLY=true`}</code>
+        <code>{`PYVERDEX_PROJECT_ROOT=/path/to/project
+PYVERDEX_MODEL__PROVIDER=claude-code
+PYVERDEX_MODEL__MODEL=claude-sonnet-4-6
+PYVERDEX_GENERATE__APPLY=true`}</code>
       </pre>
 
       <h2>Paths</h2>

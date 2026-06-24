@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Launch the pyverify web app against the bundled demo project.
+# Launch the pyverdex web app against the bundled demo project.
 #
 #   ./demo/run_demo.sh            # http://127.0.0.1:8000
 #   PORT=9000 ./demo/run_demo.sh
@@ -18,17 +18,17 @@ fi
 HOST="${HOST:-127.0.0.1}"
 PORT="${PORT:-8000}"
 
-echo "[pyverify demo] syncing python env…"
+echo "[pyverdex demo] syncing python env…"
 uv sync >/dev/null
 
-if [ ! -f src/pyverify/server/static/index.html ]; then
+if [ ! -f src/pyverdex/server/static/index.html ]; then
   if command -v npm >/dev/null 2>&1; then
-    echo "[pyverify demo] building web frontend…"
+    echo "[pyverdex demo] building web frontend…"
     ( cd web && npm install --no-fund --no-audit && npm run build )
   else
-    echo "[pyverify demo] WARNING: frontend not built and npm not found — API only."
+    echo "[pyverdex demo] WARNING: frontend not built and npm not found — API only."
   fi
 fi
 
-echo "[pyverify demo] → http://$HOST:$PORT   (project: demo/sample_app)"
-exec uv run pyverify serve demo/sample_app --host "$HOST" --port "$PORT"
+echo "[pyverdex demo] → http://$HOST:$PORT   (project: demo/sample_app)"
+exec uv run pyverdex serve demo/sample_app --host "$HOST" --port "$PORT"

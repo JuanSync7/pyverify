@@ -26,7 +26,7 @@ export function ConceptsPage() {
     price(10)          # runs every line of price(), asserts nothing`}</code>
       </pre>
       <p>
-        pyverify exists to replace that single misleading number with a set of honest ones. Here is
+        pyverdex exists to replace that single misleading number with a set of honest ones. Here is
         each dimension, what it catches, and why coverage can&apos;t see it.
       </p>
 
@@ -52,7 +52,7 @@ export function ConceptsPage() {
       <h2>Tiers: not every function needs the same bar</h2>
       <p>
         A boundary/critical function (an API entrypoint, a money calculation) is held to a higher
-        line target than cold, rarely-run code. pyverify classifies functions and applies three
+        line target than cold, rarely-run code. pyverdex classifies functions and applies three
         tiers:
       </p>
       <table className="wiki-table">

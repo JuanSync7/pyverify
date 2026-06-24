@@ -1,4 +1,4 @@
-"""Cross-stage pydantic contracts for the pyverify verification engine.
+"""Cross-stage pydantic contracts for the pyverdex verification engine.
 
 Two groups of models live here:
 

@@ -4,7 +4,7 @@ import { DimensionReadout, FALSE_SIGNAL_CHANNELS } from "../wiki/DimensionReadou
 import { Mermaid } from "../wiki/Mermaid";
 
 // The hook. A newcomer should leave understanding the one idea that makes
-// pyverify worth using — green ≠ verified — and know exactly where to click.
+// pyverdex worth using — green ≠ verified — and know exactly where to click.
 export function HomePage() {
   return (
     <article className="page">
@@ -12,7 +12,7 @@ export function HomePage() {
         <div className="hero-eyebrow">Python · test verification</div>
         <h1>Green tests can still be lying to you.</h1>
         <p className="sub">
-          A passing suite at 100% line coverage can verify almost nothing. <strong>pyverify</strong>{" "}
+          A passing suite at 100% line coverage can verify almost nothing. <strong>pyverdex</strong>{" "}
           measures whether your tests <em>actually</em> check your code — across seven dimensions —
           and can author the tests that close the gaps.
         </p>
@@ -28,7 +28,7 @@ export function HomePage() {
           <DimensionReadout channels={FALSE_SIGNAL_CHANNELS} />
           <figcaption className="fs-caption">
             <b>What a single number hides.</b> The line reads 100% — yet mutations survive and
-            integration seams are untested. That gap is the <strong>false signal</strong> pyverify
+            integration seams are untested. That gap is the <strong>false signal</strong> pyverdex
             exists to expose.
           </figcaption>
         </figure>
@@ -49,7 +49,7 @@ export function HomePage() {
       <h2>Seven questions one number can&apos;t answer</h2>
       <p>
         Line coverage only proves a line <em>ran</em> — not that any test would notice if it broke.
-        pyverify treats verification as <strong>multi-dimensional</strong>; each dimension answers a
+        pyverdex treats verification as <strong>multi-dimensional</strong>; each dimension answers a
         question your coverage report can&apos;t:
       </p>
 
@@ -69,7 +69,7 @@ export function HomePage() {
 
       <h2>One deterministic pipeline</h2>
       <p>
-        pyverify is a <strong>LangGraph state machine</strong>: a fixed sequence of stages with a
+        pyverdex is a <strong>LangGraph state machine</strong>: a fixed sequence of stages with a
         measure-and-improve loop in the middle. Deterministic tools do the measuring; an LLM only
         does the judgment work — authoring tests — behind human gates you control.
       </p>

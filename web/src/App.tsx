@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  api, Dimension, FunctionCoverage, getApiBase, ProjectInfo, Report,
+  api, Dimension, fetchSession, FunctionCoverage, getApiBase, ProjectInfo, Report,
   sampleReportUrl, setApiBase, STATIC_DEMO,
 } from "./api";
 import { Terminal } from "./Terminal";
@@ -78,7 +78,9 @@ export function App() {
 
   useEffect(() => {
     if (live) {
-      api.default()
+      // Pick up the per-process auth token (same-origin server) before any call.
+      fetchSession()
+        .then(() => api.default())
         .then((d) => { if (d.path) { setPath(d.path); return api.discover(d.path).then(setInfo); } })
         .catch((e) => setErr(`backend unreachable: ${e.message ?? e}`));
     } else {
@@ -124,7 +126,7 @@ export function App() {
   return (
     <div className="app">
       <header>
-        <h1>pyverify</h1>
+        <h1>pyverdex</h1>
         <span className="tagline">multi-dimensional test coverage · line · branch · edges · mutation · assertions</span>
         <span className={`mode ${live ? "modelive" : "modestatic"}`}>{live ? "LIVE" : "STATIC DEMO"}</span>
       </header>
@@ -132,8 +134,8 @@ export function App() {
       {!live && (
         <div className="notice">
           Static showcase (GitHub Pages) — rendering a bundled sample report.
-          Interactive runs and the web terminal need the pyverify backend. Run
-          <code>pyverify serve</code> (or <code>./demo/run_demo.sh</code>) and paste its URL below to go live.
+          Interactive runs and the web terminal need the pyverdex backend. Run
+          <code>pyverdex serve</code> (or <code>./demo/run_demo.sh</code>) and paste its URL below to go live.
         </div>
       )}
 
@@ -231,7 +233,7 @@ export function App() {
         </section>
       )}
 
-      <footer>pyverify · LangGraph engine · vendored juansync tools</footer>
+      <footer>pyverdex · LangGraph engine · vendored juansync tools</footer>
     </div>
   );
 }

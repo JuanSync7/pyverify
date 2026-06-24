@@ -1,4 +1,4 @@
-"""Configuration model for the pyverify engine.
+"""Configuration model for the pyverdex engine.
 
 A single YAML (or env-overridable) config drives every threshold, which
 stages run, whether each gate is a blocking human approval or automatic, and
@@ -78,7 +78,7 @@ class GenerateConfig(BaseModel):
     restrengthen_attempts: int = 1  # re-author cycles when mutants survive
     mutation_max_lines: int = 20
     mutation_timeout: float = 30.0  # per-mutant seconds
-    generated_subdir: str = "pyverify_generated"  # under test_root
+    generated_subdir: str = "pyverdex_generated"  # under test_root
 
 
 class LoopConfig(BaseModel):
@@ -110,12 +110,12 @@ class Config(BaseSettings):
     """Top-level engine configuration.
 
     Field values may be overridden by environment variables prefixed
-    ``PYVERIFY_`` (e.g. ``PYVERIFY_PROJECT_ROOT``). Nested values use a
-    double-underscore delimiter, e.g. ``PYVERIFY_MODEL__MODEL``.
+    ``PYVERDEX_`` (e.g. ``PYVERDEX_PROJECT_ROOT``). Nested values use a
+    double-underscore delimiter, e.g. ``PYVERDEX_MODEL__MODEL``.
     """
 
     model_config = SettingsConfigDict(
-        env_prefix="PYVERIFY_",
+        env_prefix="PYVERDEX_",
         env_nested_delimiter="__",
         extra="ignore",
     )

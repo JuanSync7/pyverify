@@ -14,19 +14,19 @@ function renderPage() {
 describe("TutorialsPage", () => {
   it("has a tutorial for wiring into any pytest project", () => {
     renderPage();
-    expect(screen.getByRole("heading", { name: /wire pyverify into/i })).toBeInTheDocument();
-    expect(screen.getAllByText(/\.pyverify\.yaml/).length).toBeGreaterThan(0);
+    expect(screen.getByRole("heading", { name: /wire pyverdex into/i })).toBeInTheDocument();
+    expect(screen.getAllByText(/\.pyverdex\.yaml/).length).toBeGreaterThan(0);
   });
 
   it("has an apply-mode gap-closing tutorial driven by the mutation gate", () => {
     renderPage();
     expect(screen.getByRole("heading", { name: /apply-mode/i })).toBeInTheDocument();
-    expect(screen.getAllByText(/PYVERIFY_GENERATE__APPLY/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/PYVERDEX_GENERATE__APPLY/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/mutation/i).length).toBeGreaterThan(0);
   });
 
   it("has a browser/serve tutorial", () => {
     renderPage();
-    expect(screen.getAllByText(/pyverify serve/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/pyverdex serve/).length).toBeGreaterThan(0);
   });
 });

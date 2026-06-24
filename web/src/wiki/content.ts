@@ -1,7 +1,7 @@
 // Single source of truth for the wiki's prose-as-data.
 //
-// Every fact here is drawn from the pyverify source — `config/default.yaml`,
-// `src/pyverify/tools/adapters.py`, the skill subgraphs, and `docs/ARCHITECTURE.md`
+// Every fact here is drawn from the pyverdex source — `config/default.yaml`,
+// `src/pyverdex/tools/adapters.py`, the skill subgraphs, and `docs/ARCHITECTURE.md`
 // — NOT invented. Pages are thin renderers over this module, and the tests
 // assert against it, so the wiki cannot silently drift from the engine.
 
@@ -65,7 +65,7 @@ export const DIMENSIONS: Dimension[] = [
     tool: "mutation_runner",
     why: "This is the real test of assertion *strength*. Weak tests pass against broken code; strong tests fail. The single best signal that coverage is honest.",
     example:
-      "Flip `a + b` to `a - b`. If every test still passes, the suite proves nothing about that line — a 'surviving mutant'. pyverify's generate gate requires a 100% kill-rate.",
+      "Flip `a + b` to `a - b`. If every test still passes, the suite proves nothing about that line — a 'surviving mutant'. pyverdex's generate gate requires a 100% kill-rate.",
   },
   {
     key: "assertion",
@@ -361,6 +361,163 @@ export const GENERATE_CFG: ConfigItem[] = [
 ];
 
 // --------------------------------------------------------------------------
+// The Python stack — the third-party libraries pyverdex is built on, grouped
+// by the job they do. Every entry is a package the engine imports or invokes
+// directly (checked against the source); `seenIn` names where so the claim is
+// falsifiable. Deliberately ABSENT: mutmut and detect-secrets. pyverdex ships
+// its own AST mutation runner and entropy/pattern secret scanner instead of
+// calling those, so they never appear here as if they powered a measurement —
+// the engine's own toolbox lives in TOOLS / the Deterministic tools page.
+// --------------------------------------------------------------------------
+
+export interface Package {
+  /** PyPI / import name, exactly as engineers know it. */
+  name: string;
+  /** One line: the job it does for pyverdex. */
+  role: string;
+  /** Where it shows up in the engine — proof, not marketing. */
+  seenIn: string;
+}
+
+export interface PackageGroup {
+  title: string;
+  /** One sentence framing what this layer is responsible for. */
+  blurb: string;
+  packages: Package[];
+}
+
+export const PACKAGE_GROUPS: PackageGroup[] = [
+  {
+    title: "Orchestration",
+    blurb:
+      "pyverdex is a LangGraph state machine — every step is a compiled subgraph and the audit⇄generate loop is an edge in the graph. This layer is model-agnostic by design: it depends on LangGraph, never on a model vendor.",
+    packages: [
+      {
+        name: "langgraph",
+        role: "The engine itself — each pipeline step is a compiled subgraph, and the audit⇄generate loop is a conditional edge.",
+        seenIn: "graph.py · skills/*.py",
+      },
+      {
+        name: "langgraph-checkpoint-sqlite",
+        role: "Checkpoints graph state to SQLite, so a run can stop at a human gate and resume on the next invocation.",
+        seenIn: "graph.py — SqliteSaver",
+      },
+    ],
+  },
+  {
+    title: "Typed core",
+    blurb:
+      "Nothing in the pipeline passes around loose dicts. State, tool results, and report schemas are typed models, and configuration is layered and validated.",
+    packages: [
+      {
+        name: "pydantic",
+        role: "Tool results and the unified report are typed Pydantic models — which is why the graph branches on structured fields, not prose. (Graph state itself is a typed TypedDict.)",
+        seenIn: "models.py · tools/vendored/*/schemas.py",
+      },
+      {
+        name: "pydantic-settings",
+        role: "Layered config: built-in defaults, then a config file, then PYVERDEX_* environment overrides.",
+        seenIn: "config.py — Config(BaseSettings)",
+      },
+      {
+        name: "pyyaml",
+        role: "Parses the YAML config file and the per-project discovery rules (.pyverdex.yaml).",
+        seenIn: "config.py · discovery.py",
+      },
+    ],
+  },
+  {
+    title: "Measurement",
+    blurb:
+      "These produce the numbers. No model touches them — identical input gives identical output, which is what makes the report trustworthy.",
+    packages: [
+      {
+        name: "coverage",
+        role: "coverage.py runs the suite and records which lines executed — the raw line dimension and the .coverage file everything else reads.",
+        seenIn: "adapters.py — collect_coverage",
+      },
+      {
+        name: "ruff",
+        role: "Fast Python linter, and the safe auto-fixer (ruff check --fix) the fix step applies.",
+        seenIn: "lint_reporter · fix step",
+      },
+      {
+        name: "mypy",
+        role: "Static type checking, folded into the lint report.",
+        seenIn: "lint_reporter",
+      },
+      {
+        name: "bandit",
+        role: "Security static analysis (SAST) for the lint dimension.",
+        seenIn: "lint_reporter",
+      },
+      {
+        name: "vulture",
+        role: "Dead-code detection for the lint dimension.",
+        seenIn: "lint_reporter",
+      },
+      {
+        name: "hypothesis",
+        role: "Property-based testing. The strategy generator proposes Hypothesis @given strategies for a function's inputs.",
+        seenIn: "hypothesis_strategy_generator",
+      },
+    ],
+  },
+  {
+    title: "Model layer",
+    blurb:
+      "Optional and pluggable. The judgment nodes (fix, generate, evaluate, integrate) reach an LLM through a small LLMBackend interface — the deterministic core needs none of it. One API provider is wired today; adding OpenAI, Google or a local model is a new backend, not a rewrite.",
+    packages: [
+      {
+        name: "langchain-anthropic",
+        role: "The one API provider wired today — binds Claude via ChatAnthropic (needs ANTHROPIC_API_KEY). The claude-code backend shells out to the local CLI with no package and no key; the fake backend needs neither.",
+        seenIn: "backends.py · llm.py — ChatAnthropic",
+      },
+    ],
+  },
+  {
+    title: "Run & present",
+    blurb:
+      "How a run is driven and how its verdict is shown — on the command line, as a standalone HTML report, and in the live dashboard.",
+    packages: [
+      {
+        name: "pytest",
+        role: "The runner everything executes under — coverage shells out to pytest to exercise the suite.",
+        seenIn: "adapters.py",
+      },
+      {
+        name: "typer",
+        role: "The pyverdex command-line interface.",
+        seenIn: "cli.py",
+      },
+      {
+        name: "rich",
+        role: "Readable, colourised terminal output and tables.",
+        seenIn: "cli.py — Console, Table",
+      },
+      {
+        name: "jinja2",
+        role: "Renders the standalone HTML coverage report.",
+        seenIn: "report/builder.py",
+      },
+      {
+        name: "fastapi",
+        role: "The dashboard / serve API the Playground talks to.",
+        seenIn: "server/app.py",
+      },
+      {
+        name: "uvicorn",
+        role: "The ASGI server that hosts the dashboard.",
+        seenIn: "cli.py — serve",
+      },
+    ],
+  },
+];
+
+/** Flat list of every highlighted package, for counts and tests. */
+export const PACKAGES: Package[] = PACKAGE_GROUPS.flatMap((g) => g.packages);
+
+// --------------------------------------------------------------------------
 // Flow diagrams, as Mermaid sources (rendered by <Mermaid>). All graphs in the
 // wiki are Mermaid-driven — no hand-drawn ASCII. The `class … det|judge|
 // terminal|decision` assignments reference the shared classes the <Mermaid>
@@ -387,7 +544,7 @@ export const PIPELINE: Diagram = {
   class fix,generate,integrate,evaluate judge
   class afteraudit decision`,
   caption:
-    "The pyverify pipeline: lint, fix, audit, then the audit⇄generate loop, and out through evaluate, integrate, report.",
+    "The pyverdex pipeline: lint, fix, audit, then the audit⇄generate loop, and out through evaluate, integrate, report.",
 };
 
 export const PIPELINE_COMPACT: Diagram = {
@@ -400,7 +557,7 @@ export const PIPELINE_COMPACT: Diagram = {
   class lint,audit,report det
   class fix,generate,integrate,evaluate judge
   class gap decision`,
-  caption: "The pyverify pipeline at a glance, with the audit⇄generate loop.",
+  caption: "The pyverdex pipeline at a glance, with the audit⇄generate loop.",
 };
 
 export const APPLY_MODE_LOOP: Diagram = {

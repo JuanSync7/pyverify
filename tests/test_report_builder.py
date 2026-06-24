@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from pyverify.config import Config
-from pyverify.models import DimensionStatus
-from pyverify.report.builder import build_unified_report
+from pyverdex.config import Config
+from pyverdex.models import DimensionStatus
+from pyverdex.report.builder import build_unified_report
 
 
 def _state() -> dict:

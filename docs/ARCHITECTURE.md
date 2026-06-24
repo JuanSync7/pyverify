@@ -1,4 +1,4 @@
-# pyverify architecture
+# pyverdex architecture
 
 ## Goal
 
@@ -15,7 +15,7 @@ that:
 ## Layering
 
 ```
-pyverify/
+pyverdex/
   config.py        Config: thresholds, per-stage enabled+gate, loop, model, paths
   state.py         EngineState (TypedDict) — the LangGraph channel schema
   models.py        Cross-stage pydantic artifacts + UnifiedCoverageReport
@@ -34,7 +34,7 @@ pyverify/
 
 ## How each design decision maps back
 
-| juansync-synapse | pyverify |
+| juansync-synapse | pyverdex |
 |---|---|
 | `SKILL.md` flowchart (prose) | a compiled `StateGraph` subgraph in `skills/` with named internal nodes |
 | skill rules + TDD `protocols/*.md` | system-prompt material loaded by `knowledge.build_system_prompt()` |
@@ -72,7 +72,7 @@ the loop never stops — a bug we hit and fixed.)
 `skills/_gates.py::human_gate` calls `interrupt()` only when
 `config.is_gated(stage)`. The CLI drives the engine with a SQLite checkpointer;
 on interrupt it surfaces the pending gate and either auto-approves (`--yes`) or
-pauses for `pyverify resume`. Resume passes `Command(resume={"approve": ...})`.
+pauses for `pyverdex resume`. Resume passes `Command(resume={"approve": ...})`.
 
 ## The unified report — the headline output
 

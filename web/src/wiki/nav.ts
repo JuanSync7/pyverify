@@ -33,6 +33,7 @@ export const NAV: NavSection[] = [
     title: "Reference",
     items: [
       { to: "/tools", label: "Deterministic tools" },
+      { to: "/stack", label: "Python stack" },
       { to: "/agents", label: "Agents & backends" },
       { to: "/config", label: "Configuration" },
     ],
@@ -46,4 +47,4 @@ export const NAV: NavSection[] = [
   },
 ];
 
-export const GITHUB_URL = "https://github.com/JuanSync7/pyverify";
+export const GITHUB_URL = "https://github.com/JuanSync7/pyverdex";

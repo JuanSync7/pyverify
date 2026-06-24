@@ -1,5 +1,5 @@
 [project]
-name = "pyverify"
+name = "pyverdex"
 version = "0.1.0"
 description = "Multi-dimensional test-coverage verification engine (LangGraph). Line + branch + call-graph edges + mutation + assertion-quality, with config-driven gates and an audit-generate loop."
 readme = "README.md"
@@ -36,7 +36,7 @@ dependencies = [
 ]
 
 [project.scripts]
-pyverify = "pyverify.cli:main"
+pyverdex = "pyverdex.cli:main"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -44,7 +44,7 @@ addopts = "-q"
 
 [tool.ruff]
 line-length = 100
-extend-exclude = ["src/pyverify/tools/vendored", "examples"]
+extend-exclude = ["src/pyverdex/tools/vendored", "examples"]
 
 [tool.uv]
 package = true

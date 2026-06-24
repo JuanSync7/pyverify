@@ -1,7 +1,7 @@
 """Typed adapters over the vendored deterministic tools.
 
 Each adapter shells out to one vendored tool via ``python -m
-pyverify.tools.vendored.<tool>.<tool>`` (so the tools' relative imports keep
+pyverdex.tools.vendored.<tool>.<tool>`` (so the tools' relative imports keep
 working), parses its JSON stdout, and returns a :class:`ToolResult`. These
 adapters are the *deterministic nodes* of the LangGraph engine — no LLM is
 involved in measurement.
@@ -21,7 +21,7 @@ from typing import Any, Optional
 
 from pydantic import BaseModel
 
-_VENDORED = "pyverify.tools.vendored"
+_VENDORED = "pyverdex.tools.vendored"
 
 
 class ToolResult(BaseModel):

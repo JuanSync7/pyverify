@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from pyverify.config import Config, GateMode, StageConfig, StageName
+from pyverdex.config import Config, GateMode, StageConfig, StageName
 
 REPO = Path(__file__).resolve().parents[1]
 SAMPLE = REPO / "examples" / "sample_project"

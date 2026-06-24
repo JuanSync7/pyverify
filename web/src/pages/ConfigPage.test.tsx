@@ -32,7 +32,7 @@ describe("ConfigPage", () => {
 
   it("documents env overrides", () => {
     renderPage();
-    expect(screen.getAllByText(/PYVERIFY_/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/PYVERDEX_/).length).toBeGreaterThan(0);
   });
 
   it("documents the model provider", () => {

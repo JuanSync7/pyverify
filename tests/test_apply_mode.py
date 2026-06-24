@@ -5,9 +5,9 @@ from __future__ import annotations
 import shutil
 from pathlib import Path
 
-from pyverify.backends import FakeBackend, backend_available
-from pyverify.config import Config, GateMode, StageConfig, StageName
-from pyverify.graph import build_engine, initial_state
+from pyverdex.backends import FakeBackend, backend_available
+from pyverdex.config import Config, GateMode, StageConfig, StageName
+from pyverdex.graph import build_engine, initial_state
 
 REPO = Path(__file__).resolve().parents[1]
 SAMPLE = REPO / "examples" / "sample_project"
@@ -76,7 +76,7 @@ def test_propose_only_writes_nothing(tmp_path):
 
     assert len(state["generated"]) == 1
     assert "test_path" not in state["generated"][0]  # nothing written
-    assert not (project / "tests" / "pyverify_generated").exists()
+    assert not (project / "tests" / "pyverdex_generated").exists()
     assert state["loop_exhausted"] is True
 
 

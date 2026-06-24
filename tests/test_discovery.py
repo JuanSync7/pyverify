@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from pyverify.discovery import detect_source_root, detect_test_root, discover_config, project_info
+from pyverdex.discovery import detect_source_root, detect_test_root, discover_config, project_info
 
 REPO = Path(__file__).resolve().parents[1]
 
@@ -25,9 +25,9 @@ def test_flat_layout(tmp_path: Path):
     assert cfg.paths.source_root == "."
 
 
-def test_pyverify_yaml_is_respected():
+def test_pyverdex_yaml_is_respected():
     cfg = discover_config(REPO / "demo" / "sample_app")
-    # .pyverify.yaml pins line_standard to 80 and max_cycles to 2
+    # .pyverdex.yaml pins line_standard to 80 and max_cycles to 2
     assert cfg.thresholds.line_standard == 80.0
     assert cfg.loop.max_cycles == 2
 

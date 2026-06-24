@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Terminal as XTerm } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
+import { getToken } from "./api";
 
 function wsUrl(wsBase: string, path: string): string {
   let base = wsBase.trim();
@@ -10,7 +11,9 @@ function wsUrl(wsBase: string, path: string): string {
     const proto = location.protocol === "https:" ? "wss" : "ws";
     base = `${proto}://${location.host}`;
   }
-  return `${base}/ws/terminal?path=${encodeURIComponent(path)}`;
+  const tok = getToken();
+  const auth = tok ? `&token=${encodeURIComponent(tok)}` : "";
+  return `${base}/ws/terminal?path=${encodeURIComponent(path)}${auth}`;
 }
 
 export function Terminal({ path, wsBase = "" }: { path: string; wsBase?: string }) {
@@ -42,7 +45,7 @@ export function Terminal({ path, wsBase = "" }: { path: string; wsBase?: string 
       term.write(typeof e.data === "string" ? e.data : new Uint8Array(e.data));
     ws.onopen = () => {
       sendResize();
-      term.writeln("\x1b[2m# pyverify web terminal — try: uv run pyverify run . --yes\x1b[0m");
+      term.writeln("\x1b[2m# pyverdex web terminal — try: uv run pyverdex run . --yes\x1b[0m");
     };
     ws.onclose = () => term.writeln("\r\n\x1b[31m[terminal disconnected]\x1b[0m");
 

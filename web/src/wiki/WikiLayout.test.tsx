@@ -18,7 +18,7 @@ function renderLayout() {
 describe("WikiLayout", () => {
   it("renders the brand and the page (outlet)", () => {
     renderLayout();
-    expect(screen.getByRole("link", { name: "pyverify" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "pyverdex" })).toBeInTheDocument();
     expect(screen.getByText("OUTLET CONTENT")).toBeInTheDocument();
   });
 

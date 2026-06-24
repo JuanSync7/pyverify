@@ -2,8 +2,8 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
-// Defaults build straight into the FastAPI package so `pyverify serve` ships
-// the UI at "/". The GitHub Pages workflow overrides VITE_BASE (e.g. /pyverify/)
+// Defaults build straight into the FastAPI package so `pyverdex serve` ships
+// the UI at "/". The GitHub Pages workflow overrides VITE_BASE (e.g. /pyverdex/)
 // and VITE_OUT (dist) to build a static, backend-optional showcase.
 export default defineConfig({
   base: process.env.VITE_BASE || "/",
@@ -15,7 +15,7 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: process.env.VITE_OUT || "../src/pyverify/server/static",
+    outDir: process.env.VITE_OUT || "../src/pyverdex/server/static",
     emptyOutDir: true,
   },
   test: {

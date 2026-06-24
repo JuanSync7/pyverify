@@ -10,8 +10,8 @@ export function PipelinePage() {
     <article className="page">
       <h1 className="page-title">The pipeline</h1>
       <p className="page-lede">
-        pyverify is one <strong>LangGraph state machine</strong>. The original juansync-synapse
-        engine was a set of prose flowcharts that only <em>suggested</em> the next step; pyverify
+        pyverdex is one <strong>LangGraph state machine</strong>. The original juansync-synapse
+        engine was a set of prose flowcharts that only <em>suggested</em> the next step; pyverdex
         compiles that into a deterministic graph with a real loop and real gates.
       </p>
 
@@ -67,7 +67,7 @@ export function PipelinePage() {
         Each stage carries a <code>gate</code> setting. <code>gated</code> stages call LangGraph&apos;s{" "}
         <code>interrupt()</code> and pause for human approval before proceeding; <code>auto</code>{" "}
         stages run unattended. Because state is checkpointed, an interrupted run can be resumed
-        later with an approve/reject decision (<code>pyverify resume</code>), or auto-approved in CI
+        later with an approve/reject decision (<code>pyverdex resume</code>), or auto-approved in CI
         with <code>--yes</code>.
       </p>
       <p>

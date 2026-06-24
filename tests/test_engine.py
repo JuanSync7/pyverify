@@ -6,7 +6,7 @@ from pathlib import Path
 
 from langgraph.types import Command
 
-from pyverify.graph import build_engine, initial_state, make_checkpointer
+from pyverdex.graph import build_engine, initial_state, make_checkpointer
 
 
 def test_deterministic_run_detects_line_gap(deterministic_cfg):

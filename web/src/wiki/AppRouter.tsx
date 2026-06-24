@@ -6,6 +6,7 @@ import { ConceptsPage } from "../pages/ConceptsPage";
 import { PipelinePage } from "../pages/PipelinePage";
 import { StepsPage } from "../pages/StepsPage";
 import { ToolsPage } from "../pages/ToolsPage";
+import { StackPage } from "../pages/StackPage";
 import { AgentsPage } from "../pages/AgentsPage";
 import { ConfigPage } from "../pages/ConfigPage";
 import { StartPage } from "../pages/StartPage";
@@ -32,6 +33,7 @@ export function AppRouter() {
         <Route path="steps" element={<StepsPage />} />
         <Route path="steps/:stepId" element={<StepsPage />} />
         <Route path="tools" element={<ToolsPage />} />
+        <Route path="stack" element={<StackPage />} />
         <Route path="agents" element={<AgentsPage />} />
         <Route path="config" element={<ConfigPage />} />
         <Route path="tutorials" element={<TutorialsPage />} />

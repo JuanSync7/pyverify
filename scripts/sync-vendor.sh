@@ -1,25 +1,25 @@
 #!/usr/bin/env bash
-# Populate the vendored deterministic tools + knowledge docs that pyverify runs
+# Populate the vendored deterministic tools + knowledge docs that pyverdex runs
 # against. These are copies of a SEPARATE repo (juansync-synapse) and are
 # intentionally NOT committed here — sync them from your own checkout:
 #
 #   ./scripts/sync-vendor.sh /path/to/juansync-synapse
-#   PYVERIFY_JUANSYNC_ROOT=/path/to/juansync-synapse ./scripts/sync-vendor.sh
+#   PYVERDEX_JUANSYNC_ROOT=/path/to/juansync-synapse ./scripts/sync-vendor.sh
 #
-# After syncing, `uv run pytest` and `pyverify run` work against the real tools.
+# After syncing, `uv run pytest` and `pyverdex run` work against the real tools.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SRC="${1:-${PYVERIFY_JUANSYNC_ROOT:-}}"
+SRC="${1:-${PYVERDEX_JUANSYNC_ROOT:-}}"
 if [ -z "$SRC" ]; then
-  echo "usage: $0 <juansync-synapse-root>   (or set PYVERIFY_JUANSYNC_ROOT)" >&2
+  echo "usage: $0 <juansync-synapse-root>   (or set PYVERDEX_JUANSYNC_ROOT)" >&2
   exit 2
 fi
 # tolerate the doubled-path layout (juansync-synapse/juansync-synapse)
 [ -d "$SRC/src/tools/testing" ] || SRC="$SRC/juansync-synapse"
 [ -d "$SRC/src/tools/testing" ] || { echo "no src/tools/testing under $SRC" >&2; exit 2; }
 
-DST="$ROOT/src/pyverify"
+DST="$ROOT/src/pyverdex"
 TOOLS="assertion_quality boundary_classifier branch_mapper coverage_analyzer \
 flakiness_checker hypothesis_strategy_generator lint_reporter \
 log_contract_validator mutation_runner secret_scanner"

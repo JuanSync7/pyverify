@@ -50,7 +50,8 @@ export interface Report {
 export const STATIC_DEMO = import.meta.env.VITE_STATIC_DEMO === "1";
 
 const DEFAULT_BASE = (import.meta.env.VITE_API_BASE as string) || "";
-const LS_KEY = "pyverify_api_base";
+const LS_KEY = "pyverdex_api_base";
+const TOK_KEY = "pyverdex_token";
 
 export function getApiBase(): string {
   return (typeof localStorage !== "undefined" && localStorage.getItem(LS_KEY)) || DEFAULT_BASE;
@@ -59,6 +60,19 @@ export function setApiBase(base: string): void {
   if (typeof localStorage !== "undefined") {
     if (base) localStorage.setItem(LS_KEY, base);
     else localStorage.removeItem(LS_KEY);
+  }
+}
+
+// The server requires a per-process token on every sensitive endpoint. The
+// bundled (same-origin) UI gets it from /api/session; a cross-origin client
+// pastes the token printed at `pyverdex serve` startup.
+export function getToken(): string {
+  return (typeof localStorage !== "undefined" && localStorage.getItem(TOK_KEY)) || "";
+}
+export function setToken(t: string): void {
+  if (typeof localStorage !== "undefined") {
+    if (t) localStorage.setItem(TOK_KEY, t);
+    else localStorage.removeItem(TOK_KEY);
   }
 }
 /** A backend is "live" when a base URL is configured, or when not a static build. */
@@ -70,10 +84,23 @@ function u(path: string): string {
   return `${getApiBase()}${path}`;
 }
 
+function authHeaders(extra?: Record<string, string>): Record<string, string> {
+  const t = getToken();
+  return { ...(extra || {}), ...(t ? { "X-Pyverdex-Token": t } : {}) };
+}
+
+// EventSource / WebSocket can't set headers, so they carry the token as a query.
+function withToken(path: string): string {
+  const t = getToken();
+  if (!t) return u(path);
+  const sep = path.includes("?") ? "&" : "?";
+  return u(`${path}${sep}token=${encodeURIComponent(t)}`);
+}
+
 async function jpost<T>(path: string, body: unknown): Promise<T> {
   const r = await fetch(u(path), {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(body),
   });
   if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || r.statusText);
@@ -84,8 +111,24 @@ export function sampleReportUrl(): string {
   return `${import.meta.env.BASE_URL}sample-report.json`;
 }
 
+/** Pull the per-process token from a same-origin (or allowed) server. No-op on failure. */
+export async function fetchSession(): Promise<boolean> {
+  try {
+    const r = await fetch(u("/api/session"));
+    if (!r.ok) return false;
+    const tok = (await r.json()).token as string | undefined;
+    if (tok) {
+      setToken(tok);
+      return true;
+    }
+  } catch {
+    /* server not reachable / cross-origin blocked — caller may prompt for a token */
+  }
+  return false;
+}
+
 export const api = {
-  default: () => fetch(u("/api/default")).then((r) => r.json()),
+  default: () => fetch(u("/api/default"), { headers: authHeaders() }).then((r) => r.json()),
   discover: (path: string) => jpost<ProjectInfo>("/api/discover", { path }),
   run: (path: string, apply: boolean, provider: string | null) =>
     jpost<{ run_id: string; info: ProjectInfo }>("/api/run", {
@@ -94,8 +137,10 @@ export const api = {
       provider: provider || null,
     }),
   file: (root: string, path: string) =>
-    fetch(u(`/api/file?root=${encodeURIComponent(root)}&path=${encodeURIComponent(path)}`)).then(
-      (r) => r.json()
-    ),
-  eventsUrl: (runId: string) => u(`/api/runs/${runId}/events`),
+    // Token goes in the header only — never the URL — so it can't leak to the
+    // server access log / browser history. (EventSource below must use a query.)
+    fetch(u(`/api/file?root=${encodeURIComponent(root)}&path=${encodeURIComponent(path)}`), {
+      headers: authHeaders(),
+    }).then((r) => r.json()),
+  eventsUrl: (runId: string) => withToken(`/api/runs/${runId}/events`),
 };

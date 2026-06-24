@@ -4,7 +4,7 @@ import { Mermaid } from "../wiki/Mermaid";
 
 const JUDGMENT_STEPS = STEPS.filter((s) => s.kind === "judgment" || s.kind === "mixed");
 
-// The LLM side of pyverify, and — just as important — its leash. The model only
+// The LLM side of pyverdex, and — just as important — its leash. The model only
 // does judgment work, behind gates, and in apply-mode its output must pass a
 // deterministic mutation gate before it is trusted.
 export function AgentsPage() {
@@ -13,7 +13,7 @@ export function AgentsPage() {
       <h1 className="page-title">Agents &amp; backends</h1>
       <p className="page-lede">
         Deterministic tools <em>measure</em>; an LLM only does the <strong>judgment</strong> work
-        no tool can — reading a gap and writing a test for it. pyverify keeps that model on a short
+        no tool can — reading a gap and writing a test for it. pyverdex keeps that model on a short
         leash: it runs behind human gates, and anything it writes must survive a deterministic
         check before it counts.
       </p>

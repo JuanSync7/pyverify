@@ -1,7 +1,7 @@
 """A pty-backed web terminal bridged over a WebSocket.
 
 Spawns an interactive shell in the project directory so you can run pytest /
-``pyverify run`` straight from the browser. The client (xterm.js) sends raw
+``pyverdex run`` straight from the browser. The client (xterm.js) sends raw
 keystrokes as text/binary and ``{"type":"resize","rows","cols"}`` JSON for
 window resizes; the shell's output is streamed back as binary frames.
 """
@@ -41,7 +41,7 @@ async def pty_terminal(ws: WebSocket, cwd: str, *, shell: Optional[str] = None) 
             pass
         env = os.environ.copy()
         env["TERM"] = "xterm-256color"
-        env["PYVERIFY_WEB_TERMINAL"] = "1"
+        env["PYVERDEX_WEB_TERMINAL"] = "1"
         os.execvpe(shell, [shell, "-i"], env)
         os._exit(1)  # pragma: no cover
 

@@ -1,9 +1,9 @@
-"""Generic adapter: point pyverify at any pytest project and get a Config.
+"""Generic adapter: point pyverdex at any pytest project and get a Config.
 
 Resolution order for a target directory:
 
-1. ``.pyverify.yaml`` in the project root  → load it (explicit).
-2. ``[tool.pyverify]`` table in ``pyproject.toml``  → use it (explicit).
+1. ``.pyverdex.yaml`` in the project root  → load it (explicit).
+2. ``[tool.pyverdex]`` table in ``pyproject.toml``  → use it (explicit).
 3. Auto-detect source/test layout (src-layout, single top-level package, or
    flat) by inspecting the tree.
 
@@ -73,7 +73,7 @@ def _pyproject_overrides(root: Path) -> dict[str, Any]:
         data = tomllib.loads(pp.read_text(encoding="utf-8"))
     except (tomllib.TOMLDecodeError, OSError):
         return {}
-    return data.get("tool", {}).get("pyverify", {}) or {}
+    return data.get("tool", {}).get("pyverdex", {}) or {}
 
 
 def discover_config(path: str | Path, **overrides: Any) -> Config:
@@ -82,7 +82,7 @@ def discover_config(path: str | Path, **overrides: Any) -> Config:
         raise NotADirectoryError(f"not a directory: {root}")
 
     data: dict[str, Any] = {}
-    yaml_path = root / ".pyverify.yaml"
+    yaml_path = root / ".pyverdex.yaml"
     if yaml_path.exists():
         data = yaml.safe_load(yaml_path.read_text(encoding="utf-8")) or {}
     elif _pyproject_overrides(root):

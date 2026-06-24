@@ -6,7 +6,7 @@ export function StartPage() {
     <article className="page">
       <h1 className="page-title">Get started</h1>
       <p className="page-lede">
-        pyverify runs on any pytest project. The deterministic measurement + report need no API key
+        pyverdex runs on any pytest project. The deterministic measurement + report need no API key
         and no model — add an LLM only when you want it to author tests.
       </p>
 
@@ -15,12 +15,12 @@ export function StartPage() {
         Python 3.11+. Install with <a href="https://docs.astral.sh/uv/" target="_blank" rel="noreferrer">uv</a>:
       </p>
       <pre>
-        <code>{`git clone https://github.com/JuanSync7/pyverify
-cd pyverify
+        <code>{`git clone https://github.com/JuanSync7/pyverdex
+cd pyverdex
 uv sync          # installs LangGraph + the analysis toolchain`}</code>
       </pre>
       <p>
-        <code>import pyverify</code> works immediately. To run the <em>engine</em>, populate the
+        <code>import pyverdex</code> works immediately. To run the <em>engine</em>, populate the
         vendored measurement tools once from your own checkout of the upstream toolkit:
       </p>
       <pre>
@@ -38,11 +38,11 @@ uv sync          # installs LangGraph + the analysis toolchain`}</code>
       <p>Point it at any pytest project. The layout (src / package / flat) is auto-detected.</p>
       <pre>
         <code>{`# Auto-approve every gate — good for CI:
-uv run pyverify run /path/to/project --yes
+uv run pyverdex run /path/to/project --yes
 
 # Or stop at the first human gate, review, then resume:
-uv run pyverify run /path/to/project --thread myrun
-uv run pyverify resume --thread myrun --approve   # or --reject`}</code>
+uv run pyverdex run /path/to/project --thread myrun
+uv run pyverdex resume --thread myrun --approve   # or --reject`}</code>
       </pre>
       <p>
         The unified report lands at{" "}
@@ -55,9 +55,9 @@ uv run pyverify resume --thread myrun --approve   # or --reject`}</code>
         <code>claude</code> CLI with <strong>no API key</strong>:
       </p>
       <pre>
-        <code>{`PYVERIFY_GENERATE__APPLY=true \\
-PYVERIFY_MODEL__PROVIDER=claude-code \\
-uv run pyverify run /path/to/project --yes`}</code>
+        <code>{`PYVERDEX_GENERATE__APPLY=true \\
+PYVERDEX_MODEL__PROVIDER=claude-code \\
+uv run pyverdex run /path/to/project --yes`}</code>
       </pre>
       <p>
         Each authored test must pass the <Link to="/steps/generate">mutation gate</Link> before it
@@ -67,7 +67,7 @@ uv run pyverify run /path/to/project --yes`}</code>
       <h2>4. Open the dashboard</h2>
       <pre>
         <code>{`./demo/run_demo.sh                       # builds the UI, serves the demo on :8000
-uv run pyverify serve /path/to/project   # or point it at your own project`}</code>
+uv run pyverdex serve /path/to/project   # or point it at your own project`}</code>
       </pre>
       <p>
         The dashboard streams the run log live and embeds a real terminal in the project. Try the

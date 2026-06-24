@@ -19,7 +19,7 @@ describe("StartPage", () => {
 
   it("shows how to run a verification and resume a gate", () => {
     renderPage();
-    expect(screen.getAllByText(/pyverify run/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/pyverdex run/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/--yes/).length).toBeGreaterThan(0);
   });
 
@@ -30,6 +30,6 @@ describe("StartPage", () => {
 
   it("shows how to serve the dashboard", () => {
     renderPage();
-    expect(screen.getAllByText(/pyverify serve|run_demo/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/pyverdex serve|run_demo/).length).toBeGreaterThan(0);
   });
 });
