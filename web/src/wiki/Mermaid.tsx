@@ -26,7 +26,7 @@ const THEME = {
   themeVariables: {
     darkMode: true,
     fontFamily: MONO,
-    fontSize: "13px",
+    fontSize: "15px",
     background: "transparent",
     primaryColor: "#1a1f28",
     primaryBorderColor: "#2f3744",

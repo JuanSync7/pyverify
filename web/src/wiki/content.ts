@@ -532,7 +532,7 @@ export interface Diagram {
 }
 
 export const PIPELINE: Diagram = {
-  mermaid: `flowchart LR
+  mermaid: `flowchart TD
   start([start]) --> lint --> fix --> audit
   audit --> afteraudit{coverage met?}
   afteraudit -->|"gap + budget"| generate
@@ -548,7 +548,7 @@ export const PIPELINE: Diagram = {
 };
 
 export const PIPELINE_COMPACT: Diagram = {
-  mermaid: `flowchart LR
+  mermaid: `flowchart TD
   start([start]) --> lint --> fix --> audit
   audit --> gap{gap?}
   gap -->|yes| generate --> audit
