@@ -29,3 +29,8 @@ web/dist/
 # Repopulate from your own checkout: ./scripts/sync-vendor.sh <juansync-root>
 src/pyverify/tools/vendored/
 src/pyverify/knowledge/
+
+# Local Playwright MCP artifacts (screenshots/snapshots)
+.playwright-mcp/
+*.playwright-mcp
+home-full.png
