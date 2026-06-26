@@ -45,6 +45,19 @@ describe("wiki content model", () => {
     ]);
   });
 
+  it("fully explains every step — why, how, coverage, outcome, gate, example", () => {
+    for (const s of STEPS) {
+      expect(s.why.length).toBeGreaterThan(0);
+      expect(s.how.length).toBeGreaterThanOrEqual(3); // ordered internal phases
+      for (const phase of s.how) expect(phase.length).toBeGreaterThan(0);
+      expect(s.coverage.length).toBeGreaterThan(0);
+      expect(s.outcome.length).toBeGreaterThan(0);
+      expect(s.example.length).toBeGreaterThan(0);
+      // the gate explanation must name the actual mode it documents
+      expect(s.gateReason).toContain(s.gate === "gated" ? "gated" : "auto");
+    }
+  });
+
   it("marks generate as a gated judgment step that uses the mutation gate", () => {
     const gen = getStep("generate")!;
     expect(gen.kind).toBe("judgment");

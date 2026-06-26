@@ -109,10 +109,22 @@ export interface Step {
   kind: StepKind;
   /** Default gate from config/default.yaml. */
   gate: GateMode;
-  /** One-line role in the pipeline. */
+  /** One-line role in the pipeline (index + lede). */
   summary: string;
-  /** Junior-friendly explanation of what happens inside. */
+  /** What happens inside, in one paragraph. */
   detail: string;
+  /** Why this step exists — the problem it solves and when it earns its place. */
+  why: string;
+  /** How it operates: the ordered internal phases of its own subgraph. */
+  how: string[];
+  /** How it relates to — or actually determines — coverage. */
+  coverage: string;
+  /** What state or decision this step drives downstream. */
+  outcome: string;
+  /** Why it runs unattended (auto) or pauses for human approval (gated). */
+  gateReason: string;
+  /** A concrete, junior-friendly illustration. */
+  example: string;
   /** Deterministic tools this step drives (adapter/vendored names). */
   tools: string[];
   inputs: string;
@@ -128,6 +140,21 @@ export const STEPS: Step[] = [
     summary: "Static health floor — style, likely bugs, leaked secrets.",
     detail:
       "Runs the linters over the source tree and scans for committed secrets. No LLM. It is the cheap first pass that catches defects you should never pay dynamic-analysis time to find.",
+    why: "Cheapest signal first. Static defects (style, type errors, security smells, dead code) and committed secrets need neither the test suite nor a model to find — a parser sees them. Catching them here means you never spend coverage or LLM budget on a problem the AST already knows about, and it hands `fix` a concrete worklist.",
+    how: [
+      "SCAN — walk the source root for Python modules.",
+      "RUN-LINTERS — drive the vendored lint_reporter, which fans out to ruff (style + likely bugs), mypy (types), bandit (security/SAST) and vulture (dead code), plus the secret scanner.",
+      "AGGREGATE — fold every finding into one typed LintReport (issue and error counts per tool).",
+      "EMIT — publish lint_report into graph state. It classifies only; it never fails the build on findings.",
+    ],
+    coverage:
+      "Feeds the lint dimension of the unified report (pass when zero errors, fail on any error). It is orthogonal to line/branch/mutation — the static floor, true whether or not a single test ran.",
+    outcome:
+      "A lint_report in state that `fix` acts on and `report` rolls up. No gate, so the run flows straight into `fix`.",
+    gateReason:
+      "auto — it only reads and classifies; it changes nothing on disk, so there is nothing to approve.",
+    example:
+      "An unused import or a hard-coded API key never moves the coverage %, but vulture and the secret scanner flag both here, before any test runs.",
     tools: ["lint_reporter", "secret_scanner"],
     inputs: "source tree",
     outputs: "lint findings + secret hits (the lint dimension)",
@@ -140,6 +167,21 @@ export const STEPS: Step[] = [
     summary: "Auto-fix the mechanical, propose a plan for the rest.",
     detail:
       "Applies `ruff --fix` for the safely-automatable findings (deterministic), then asks the LLM for a remediation *plan* for what is left. Propose-only: it does not rewrite your logic unattended, which is why it is gated for human approval by default.",
+    why: "Lint findings split in two: mechanical ones a tool rewrites safely, and judgement ones that need a human. `fix` clears the mechanical class automatically and turns the rest into a reviewable plan — so trivial defects are gone before measurement without ever silently rewriting your logic.",
+    how: [
+      "RUFF-FIX — run `ruff check --fix` over the source: only ruff's safe, mechanical autofixes, applied deterministically.",
+      "RE-LINT — re-run the linter to confirm what remains and refresh lint_report, so the fix is verified rather than assumed.",
+      "LLM-PLAN — for the non-ruff remainder (mypy/bandit/vulture), if a backend is configured, ask the model for a concise file-by-file remediation plan — prose, never code patches.",
+      "GATE — pause at the human gate (gated by default) so a person approves before the run continues.",
+    ],
+    coverage:
+      "Indirect. By clearing trivial lint it lifts the lint dimension; it authors no tests and moves no line/branch/mutation number.",
+    outcome:
+      "A fix_report (ruff result + remaining count + optional remediation plan) and a refreshed lint_report. Control then passes to `audit`.",
+    gateReason:
+      "gated — it can modify files (ruff --fix) and proposes changes to your code, so it stops for approval by default; the non-mechanical part is propose-only and never hand-edited unattended.",
+    example:
+      "ruff auto-removes the unused import; the mypy type error and a bandit `subprocess(shell=True)` finding become a short plan you approve, not a silent rewrite.",
     tools: ["lint_reporter (ruff --fix)"],
     inputs: "lint findings",
     outputs: "applied trivial fixes + an LLM remediation plan (proposed)",
@@ -152,6 +194,21 @@ export const STEPS: Step[] = [
     summary: "The measurement core — and the pivot of the loop.",
     detail:
       "Runs the test suite under coverage.py, then measures per-function line gaps, branch structure, boundary tiers, cross-package edges, and assertion quality. It computes whether every function meets its tier target and sets `coverage_met`. This is where the audit⇄generate loop decides whether to keep going.",
+    why: "This is the heart of pyverdex. Line coverage alone lies — it proves a line ran, not that anything checked it. `audit` measures every dimension a single % hides, and it is the only step that decides whether the suite is actually good enough. That verdict — `coverage_met` — is the pivot the whole loop turns on.",
+    how: [
+      "COLLECT — run the target test suite under coverage.py (best-effort) to produce a .coverage data file.",
+      "SNAPSHOT — derive per-function line gaps (coverage_analyzer), cross-package call edges (--edges), branch structure (branch_mapper), boundary/critical tiers (boundary_classifier) and assertion quality (assertion_quality), each from its own deterministic tool.",
+      "SCORE — for every function compare its line % against its tier target (critical 95 / standard 85 / cold 70), mark anything below as a gap, rank modules worst-first and flag critical modules.",
+      "EMIT — set coverage_met (true only when nothing is below its tier target) and write the gap report + coverage state.",
+    ],
+    coverage:
+      "This is where coverage is determined. It computes the multi-dimensional measurement for every function and the pass/fail of the line dimension against tier thresholds; every downstream step reads its numbers.",
+    outcome:
+      "audit_gap_report, coverage_state, and the coverage_met boolean. The after_audit edge then routes to `generate` (a gap remains and budget is left) or falls through to evaluate/integrate/report.",
+    gateReason:
+      "auto — pure measurement, deterministic and read-only. There is nothing to approve, and identical inputs always yield identical numbers.",
+    example:
+      "A function is 100% line-covered, but its `else:` branch never runs and its only test asserts nothing — audit's branch and assertion dimensions surface exactly what the line % hid.",
     tools: [
       "coverage.py",
       "coverage_analyzer",
@@ -171,6 +228,22 @@ export const STEPS: Step[] = [
     summary: "Author tests for the gaps — and prove they are strong.",
     detail:
       "For each gap the audit found, the LLM authors a candidate test. In apply-mode it writes the test, runs it green, then gates it on `mutation_runner`: the test must kill 100% of mutants or it is re-strengthened with the surviving mutants fed back to the model. Only tests that pass the mutation gate stick — then `audit` re-measures. This is the loop that actually closes gaps.",
+    why: "Measuring a gap doesn't close it. `generate` is the step that actually moves coverage — it authors the missing tests. But an authored test is only worth keeping if it is strong, so each must pass the mutation gate (kill 100% of injected bugs) before it counts. This is the loop that turns a red audit green.",
+    how: [
+      "SELECT — pick the unhandled below-target gaps, up to loop.max_gaps_per_cycle (10).",
+      "AUTHOR — the LLM writes one pytest module per gap (system prompt distilled from the assertion-policy + layer-unit knowledge), requiring ≥ assertion_min meaningful assertions.",
+      "GATE — human approval (gated by default) before anything is written.",
+      "APPLY (only when generate.apply=true) — write the test, check it parses, run it green, then run mutation_runner on the target function; it must reach mutation_kill_rate (1.0) or the surviving mutants are fed back and the test is re-authored, bounded by restrengthen_attempts. Only passing tests stick and the gap is marked handled.",
+      "RE-MEASURE — control returns to `audit`, which re-runs and updates coverage_met.",
+    ],
+    coverage:
+      "The only step that raises coverage — it closes line gaps with new tests, and the mutation gate guarantees those tests actually verify, driving the mutation dimension to a 100% kill-rate.",
+    outcome:
+      "Candidate tests (apply-mode: written to pyverdex_generated/, mutation-gated, recorded with kill-rate + gate status), gen_handled updated, and the audit⇄generate loop either continues or exhausts at loop.max_cycles.",
+    gateReason:
+      "gated — it writes test files and runs model-authored code, a material change to your repo, so it stops for approval. Off by default (apply=false): propose-only, nothing written unattended.",
+    example:
+      "audit finds price() 60% covered; generate writes a test, but flipping `a + b` → `a - b` still passes, so a mutant survives — it re-strengthens the assertions until that mutant dies, then keeps the test.",
     tools: ["mutation_runner"],
     inputs: "coverage gaps from audit",
     outputs: "candidate tests (apply-mode: written + mutation-gated)",
@@ -183,6 +256,21 @@ export const STEPS: Step[] = [
     summary: "Judge whether tests exercise real seams or just mocks.",
     detail:
       "Looks at the existing suite and judges integration effectiveness — are real services exercised, or is everything mocked into meaninglessness? Feeds the integration/system dimension.",
+    why: "A green suite can still be a lie if every external dependency is mocked — it only proves the mocks returned what you told them to. `evaluate` decides which boundaries deserve a real-service test, ranked by how much risk a real test would buy, so integration effort goes where mocks are most dangerous.",
+    how: [
+      "CLASSIFY — take the boundary functions that still carry line gaps from the audit snapshot and categorise each as db / api / queue / file / cli.",
+      "SCORE — rank each candidate by replacement value, score = tier_weight × risk_weight × coverage_gap, so the riskiest under-tested seams rise to the top.",
+      "PATTERN — assign a lifecycle pattern per category (db → transaction-rollback, api → vcrpy, queue → celery-harness, file → tmp_path, cli → subprocess-capture).",
+      "GATE — pass through the gate (auto by default) and hand the ranked strategies to `integrate`.",
+    ],
+    coverage:
+      "Feeds the integration/system dimension. It changes no line number — it judges whether the seams between real services are exercised and queues the ones that aren't.",
+    outcome:
+      "A ranked integration_strategies list (each with category, risk, score and a lifecycle pattern) for `integrate` to act on.",
+    gateReason:
+      "auto — it only classifies and ranks; it proposes nothing to your files, so it runs unattended. The real approval happens at `integrate`.",
+    example:
+      "A payments.charge() boundary is mocked everywhere; evaluate scores it high (api risk 4 × runtime tier 3 × its gap) and tags it `vcrpy`, putting it at the top of the integration queue.",
     tools: [],
     inputs: "test suite + measurements",
     outputs: "integration-effectiveness assessment",
@@ -195,6 +283,20 @@ export const STEPS: Step[] = [
     summary: "Propose integration tests that hit real boundaries.",
     detail:
       "Authors candidate integration tests for the unwired seams `evaluate` flagged. Propose-only today; the apply-mode hooks (flakiness + cassette secret-scanning gates) are wired for when you opt in.",
+    why: "`evaluate` says what to integrate; `integrate` proposes how — a concrete real-service test using the assigned lifecycle pattern. Because real-service tests touch databases, APIs and recorded cassettes, it hard-gates: nothing lands without review, and (when applied) flakiness and cassette-secret checks run before anything is trusted.",
+    how: [
+      "PLAN — queue the ranked strategies (ordered by replacement value), up to loop.max_gaps_per_cycle.",
+      "CONVERT — for each, the LLM proposes a real-service integration test using the assigned pattern (testcontainers / vcrpy / tmp_path / …).",
+      "GATE — hard human approval before anything is applied. This build is propose-only; the apply-mode hooks — flakiness_checker (≥10 reruns, ≤2% fail) and secret_scanner over recorded cassettes — are wired for when you opt in.",
+    ],
+    coverage:
+      "Improves the integration dimension by replacing mocks with real seams. Like generate it adds tests, but at the system boundary rather than the unit.",
+    outcome:
+      "Candidate integration tests appended to `generated` (proposed), awaiting the gate. Control then passes to `report`.",
+    gateReason:
+      "gated — real-service tests are the highest-risk thing the pipeline writes (live dependencies, recorded secrets), so it always stops for approval.",
+    example:
+      "integrate drafts a vcrpy-backed test for payments.charge() that records one real API round-trip, then pauses — you review the cassette for leaked keys before it is kept.",
     tools: ["flakiness_checker", "secret_scanner"],
     inputs: "integration assessment",
     outputs: "candidate integration tests (proposed)",
@@ -207,6 +309,20 @@ export const STEPS: Step[] = [
     summary: "Merge every dimension into one verdict.",
     detail:
       "Merges all dimensions per function into the UnifiedCoverageReport and writes `coverage-report.{json,html}`. Computes the overall verdict: fail if any dimension fails, warn if any did not run, else pass. This is the headline output — the dashboard you see in the Playground.",
+    why: "Seven dimensions across many functions are useless as scattered numbers. `report` turns them into one answer — a per-function table, dimension rollups, and a single pass/warn/fail verdict — and persists it as the JSON + HTML you actually read and the Playground dashboard renders.",
+    how: [
+      "ASSEMBLE — merge every dimension's per-function measurement into the UnifiedCoverageReport.",
+      "ROLL-UP — reduce each dimension to a status (line fails if any function is below tier; mutation passes at ≥ kill-rate; assertion fails on weak tests; …) and compute the overall verdict: fail if any dimension failed, warn if any didn't run, else pass.",
+      "WRITE — persist coverage-report.json and coverage-report.html to the report dir.",
+    ],
+    coverage:
+      "It doesn't measure coverage — it adjudicates it, combining every dimension into the headline verdict, so 'passing' means every dimension passed, not just lines.",
+    outcome:
+      "unified_coverage in state, the written report files, and the overall status — the headline output the dashboard shows.",
+    gateReason:
+      "auto — it only reads measurements and writes a report; there is nothing to approve.",
+    example:
+      "Lines pass at 96%, but one surviving mutant fails the mutation dimension — report's overall verdict is fail, exactly the honest signal line coverage alone would have hidden.",
     tools: [],
     inputs: "all dimension measurements",
     outputs: "coverage-report.{json,html} + overall verdict",
