@@ -61,3 +61,53 @@ def test_line_not_run_without_coverage():
     r = build_unified_report(st, Config())
     line = next(d for d in r.dimensions if d.name == "line")
     assert line.status is DimensionStatus.not_run
+
+
+def test_whole_codebase_headline_distinct_from_gap_avg():
+    """The headline must be whole-codebase coverage, not the gap-function average.
+
+    Here the only gap function sits at 60%, but the codebase as a whole is 92%
+    — the report must lead with 92% and keep 60% as the labelled secondary stat.
+    """
+    st = _state()
+    st["coverage_totals"] = {
+        "line": {"covered": 92, "executable": 100, "pct": 92.0},
+        "branch": {"covered": 8, "total": 10, "pct": 80.0},
+    }
+    r = build_unified_report(st, Config())
+
+    assert r.whole_line_coverage_pct == 92.0
+    assert r.whole_branch_coverage_pct == 80.0
+    assert r.covered_lines == 92 and r.executable_lines == 100
+    # legacy gap-function average is preserved, but distinct
+    assert r.overall_line_coverage_pct == 60.0
+
+    line_dim = next(d for d in r.dimensions if d.name == "line")
+    assert "92.0% line coverage (whole codebase)" in line_dim.headline
+    assert line_dim.detail["gap_function_avg_pct"] == 60.0
+    assert line_dim.detail["whole_codebase_pct"] == 92.0
+
+    branch_dim = next(d for d in r.dimensions if d.name == "branch")
+    assert "80.0% branch coverage (whole codebase)" in branch_dim.headline
+
+
+def test_cold_tier_relaxes_gate_when_configured():
+    """A cold-path function uses the 70% target, so 75% passes the gate that a
+    standard (85%) function would fail — proving the cold tier is wired."""
+    st = _state()
+    st["coverage_report"] = {
+        "total_functions": 1,
+        "gaps": [{"module": "pkg._internal.helpers", "function_name": "h",
+                  "line_start": 1, "line_end": 5, "coverage_pct": 75.0,
+                  "missing_lines": [3], "is_boundary": False}],
+    }
+    cfg = Config(thresholds={"cold_paths": ["_internal"]})
+    f = next(f for f in build_unified_report(st, cfg).functions if f.function_name == "h")
+    assert f.tier == "cold"
+    assert f.line_target == 70.0
+    assert f.line_status is DimensionStatus.warn  # 75% >= 70% cold target => not failed
+
+    # without the cold path it would be standard (85%) and fail
+    f2 = next(f for f in build_unified_report(st, Config()).functions if f.function_name == "h")
+    assert f2.tier == "standard"
+    assert f2.line_status is DimensionStatus.failed

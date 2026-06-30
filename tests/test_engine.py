@@ -20,6 +20,11 @@ def test_deterministic_run_detects_line_gap(deterministic_cfg):
     assert classify["line_coverage_pct"] == 75.0
     assert classify["branch_count"] == 2
 
+    # honest whole-codebase numbers (coverage.py over the full source tree)
+    assert uc["whole_line_coverage_pct"] == 75.0
+    assert uc["covered_lines"] == 6 and uc["executable_lines"] == 8
+    assert uc["whole_branch_coverage_pct"] == 50.0  # 2 of 4 branches taken
+
     # report artifacts written
     assert Path(state["report_path"]).exists()
     assert (Path(deterministic_cfg.abs_report_dir) / "coverage-report.json").exists()

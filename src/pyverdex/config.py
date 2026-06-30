@@ -47,6 +47,12 @@ class Thresholds(BaseModel):
     flakiness_max_fail_rate: float = 0.02
     flakiness_min_runs: int = 10
     edge_coverage_min: float = 0.0  # advisory by default
+    cold_paths: list[str] = Field(
+        default_factory=list,
+        description="Module-path substrings whose non-boundary functions use the "
+        "lower 'cold' line target, e.g. ['_internal', 'experimental']. Makes the "
+        "cold tier reachable; empty means no function is classified cold.",
+    )
 
     def line_target(self, tier: str) -> float:
         return {
@@ -54,6 +60,20 @@ class Thresholds(BaseModel):
             "standard": self.line_standard,
             "cold": self.line_cold,
         }.get(tier, self.line_standard)
+
+    def tier_for(self, *, is_boundary: bool, module: str = "") -> str:
+        """Classify a function into a coverage tier (single source of truth).
+
+        Boundary (runtime-exposed) functions are ``critical``; non-boundary
+        functions whose module matches a configured ``cold_paths`` substring are
+        ``cold``; everything else is ``standard``. Both the ``audit`` score node
+        and the report builder call this, so their tiering cannot drift.
+        """
+        if is_boundary:
+            return "critical"
+        if any(p and p in module for p in self.cold_paths):
+            return "cold"
+        return "standard"
 
 
 class StageConfig(BaseModel):

@@ -41,6 +41,7 @@ class EngineState(TypedDict, total=False):
     lint_report: dict[str, Any]
     fix_report: dict[str, Any]
     coverage_report: dict[str, Any]  # CoverageReport (line gaps)
+    coverage_totals: dict[str, Any]  # whole-codebase line/branch totals (coverage.py)
     edge_report: dict[str, Any]  # EdgeCoverageReport (call-graph edges)
     branch_map: dict[str, Any]
     boundary_report: dict[str, Any]

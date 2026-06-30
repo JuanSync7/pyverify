@@ -265,6 +265,15 @@ class UnifiedCoverageReport(BaseModel):
     total_functions: int = 0
     functions_with_line_gaps: int = 0
     boundary_gaps: int = 0
+    # whole-codebase coverage (coverage.py over the full source tree) — the honest
+    # headline number; counts every line/branch including never-imported files.
+    whole_line_coverage_pct: Optional[float] = None
+    whole_branch_coverage_pct: Optional[float] = None
+    covered_lines: Optional[int] = None
+    executable_lines: Optional[int] = None
+    # legacy: average line % over *gap functions only* — NOT whole-codebase
+    # coverage; retained for backward-compatible consumers. Prefer
+    # ``whole_line_coverage_pct`` for the real number.
     overall_line_coverage_pct: Optional[float] = None
     cross_package_edges: int = 0
     mutation_kill_rate: Optional[float] = None
