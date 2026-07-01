@@ -197,9 +197,18 @@ export function App() {
             <span className="verdict" style={{ background: STATUS_COLOR[report.overall_status] ?? "#6e7781" }}>
               {report.overall_status.toUpperCase()}
             </span>
+            <span>
+              line {pct(report.whole_line_coverage_pct)}
+              {report.covered_lines !== null && ` (${report.covered_lines}/${report.executable_lines})`}
+            </span>
+            {report.whole_branch_coverage_pct !== null && (
+              <span>branch {pct(report.whole_branch_coverage_pct)}</span>
+            )}
             <span>{report.total_functions} functions</span>
-            <span>{report.functions_with_line_gaps} line gaps ({report.boundary_gaps} boundary)</span>
-            <span>avg line {pct(report.overall_line_coverage_pct)}</span>
+            <span>
+              {report.functions_with_line_gaps} line gaps ({report.boundary_gaps} boundary,
+              avg {pct(report.overall_line_coverage_pct)})
+            </span>
             <span>{report.cross_package_edges} edges</span>
             <span>mutation {report.mutation_kill_rate === null ? "—" : `${Math.round(report.mutation_kill_rate * 100)}%`}</span>
             <span>{report.weak_tests} weak tests</span>
