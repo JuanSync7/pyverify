@@ -172,7 +172,7 @@ Internally, `audit` runs as its own compiled subgraph. Its phases, in order:
 
 1. COLLECT — run the target test suite under coverage.py (best-effort) to produce a .coverage data file.
 2. SNAPSHOT — derive per-function line gaps (coverage_analyzer), cross-package call edges (--edges), branch structure (branch_mapper), boundary/critical tiers (boundary_classifier), assertion quality (assertion_quality) and log-path coverage (log_contract_validator), each from its own deterministic tool.
-3. SCORE — for every function compare its line % against its tier target (critical 95 / standard 85 / cold 70), mark anything below as a gap, rank modules worst-first and flag critical modules.
+3. SCORE — for every function compare its line % against its tier target — critical 95 for boundary functions, standard 85 otherwise, or a lower cold 70 for modules configured as cold paths — mark anything below as a gap, rank modules worst-first and flag critical modules.
 4. EMIT — set coverage_met (true only when nothing is below its tier target) and write the gap report + coverage state.
 
 ### How it determines coverage
@@ -267,7 +267,7 @@ Internally, `evaluate` runs as its own compiled subgraph. Its phases, in order:
 
 1. CLASSIFY — take the boundary functions that still carry line gaps from the audit snapshot and categorise each as db / api / queue / file / cli.
 2. SCORE — rank each candidate by replacement value, score = tier_weight × risk_weight × coverage_gap, so the riskiest under-tested seams rise to the top.
-3. PATTERN — assign a lifecycle pattern per category (db → transaction-rollback, api → vcrpy, queue → celery-harness, file → tmp_path, cli → subprocess-capture).
+3. PATTERN — assign a lifecycle pattern per category (db → transaction-rollback, api → vcrpy, queue → celery-test-harness, file → tmp_path, cli → subprocess-capture).
 4. GATE — pass through the gate (auto by default) and hand the ranked strategies to `integrate`.
 
 ### How it determines coverage
