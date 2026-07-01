@@ -41,10 +41,12 @@ pyverdex adopts** and the **migration status**, so the structure checker
 **Deliberately deferred** (not part of this subset): `agents/`, `mcp/`,
 `evals/`, `ops/`, the wiki corpus / `llms.txt`, and the AAD agent-surface.
 
-**One deliberate divergence:** Keel §16 demotes a graph engine to one optional
-adapter behind a neutral stdlib `Plan`/`Runtime`. pyverdex **keeps LangGraph as
-a core engine** (it is the product), declared as the default runtime in
-`config/project.json`. We do not implement the neutral-Plan rewrite.
+**One deliberate deferral:** Keel §16 turns a graph engine into a named runtime
+*adapter* behind a neutral stdlib `Plan`/`Runtime`. pyverdex adopts the shape —
+LangGraph is declared as the default runtime in `config/project.json`, not a
+hidden import — but **defers** §16's full `Plan`/`Step`/`Edge` DSL and dry-run
+effect guards. LangGraph stays the concrete engine (it is the product); a later
+phase may add the neutral-Plan rewrite.
 
 ## 1. Frontmatter (labeling for sort/route)
 
@@ -109,7 +111,7 @@ reviewable phases (see `docs/adr/0001-adopt-project-keel-structure.md`):
 | Phase | Scope | Status |
 |-------|-------|--------|
 | 1 | Standard + manifest + structure gate + per-dir labeling | **in progress** |
-| 2 | Backend: `src/pyverdex` → `src/backend` with `__all__` boundaries | planned |
+| 2 | Backend: `src/pyverdex` → `src/backend` with `__init__.py`-as-API (`__all__`) boundaries and `_private` modules; turn on the `check_C`/`check_D` code gates (see ADR 0001) | planned |
 | 3 | Frontend `web/` → `src/frontend/react-vite`; server → `api/rest_fastapi`; `src/shared` | planned |
 | 4 | `models/` (LLM backends); tests → unit-mirror + integration/e2e/smoke; `test-docs/` | planned |
 

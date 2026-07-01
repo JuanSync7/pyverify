@@ -42,10 +42,13 @@ Two scoping decisions:
 
 1. **Structural subset only.** Defer `agents/`, `mcp/`, `evals/`, `ops/`, the
    wiki corpus / `llms.txt`, and the AAD agent-surface.
-2. **Keep LangGraph as a core engine.** Keel §16 demotes a graph engine to one
-   optional adapter behind a neutral stdlib `Plan`/`Runtime`. pyverdex *is* a
-   LangGraph engine, so we keep it core (declared as the default runtime in
-   `config/project.json`) and **do not** implement the neutral-Plan rewrite.
+2. **LangGraph is the default runtime, not a hidden import.** Keel §16 turns a
+   graph engine into a named runtime *adapter*, selected through the neutral
+   `runtimes` block rather than a hard-wired import. pyverdex adopts that shape —
+   LangGraph is declared as the default runtime in `config/project.json` — but
+   **defers** §16's full stdlib `Plan`/`Step`/`Edge` DSL and dry-run effect guards
+   to a later phase. For now LangGraph stays the concrete engine (it *is* the
+   product): the runtime indirection is in place, the neutral-Plan rewrite is not.
 
 ## Consequences
 
