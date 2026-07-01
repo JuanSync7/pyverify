@@ -137,6 +137,7 @@ def collect_coverage(
         "-m",
         "coverage",
         "run",
+        "--branch",  # record arc data so coverage_totals() can report branch %
         f"--source={source_root}",
         "-m",
         "pytest",
@@ -177,6 +178,79 @@ def run_coverage_gaps(
         cwd=project_root,
         timeout=timeout,
     )
+
+
+def coverage_totals(project_root: Path, source_root: Path) -> ToolResult:
+    """Whole-codebase line (and branch) coverage from the ``.coverage`` file.
+
+    Unlike :func:`run_coverage_gaps` — which lists only the *gap* functions via
+    the vendored analyzer — this sums coverage.py's per-file numbers across every
+    ``*.py`` under ``source_root`` (including files that were never imported, so
+    they count as 0%). The result is the honest, whole-codebase denominator:
+    ``covered / executable`` lines, and ``covered / total`` branches when the
+    ``.coverage`` data carries arcs (see ``--branch`` in :func:`collect_coverage`).
+
+    Computed directly via the ``coverage`` library — no vendored tool, no
+    subprocess — and degrades gracefully (returns rc=2) when coverage data or the
+    private numbers API is unavailable.
+    """
+    try:
+        import coverage as coverage_lib
+    except ImportError as exc:  # pragma: no cover - coverage is a hard dep
+        return ToolResult(tool="coverage-totals", returncode=2,
+                          stderr=f"coverage library unavailable: {exc}")
+
+    cov = coverage_lib.Coverage(data_file=str(Path(project_root) / ".coverage"))
+    try:
+        cov.load()
+    except Exception as exc:  # NoDataError and friends
+        return ToolResult(tool="coverage-totals", returncode=2,
+                          stderr=f"no coverage data: {exc}")
+
+    exec_lines = miss_lines = 0
+    tot_branches = miss_branches = 0
+    have_branch = False
+    files = 0
+    for py in sorted(Path(source_root).rglob("*.py")):
+        try:
+            numbers = cov._analyze(str(py)).numbers  # line + branch in one call
+            exec_lines += numbers.n_statements
+            miss_lines += numbers.n_missing
+            if numbers.n_branches:
+                have_branch = True
+                tot_branches += numbers.n_branches
+                miss_branches += numbers.n_missing_branches
+        except Exception:
+            # Fall back to the public per-file API for lines only.
+            try:
+                analysis = cov.analysis2(str(py))
+            except Exception:
+                continue
+            exec_lines += len(analysis[1])
+            miss_lines += len(analysis[3])
+        files += 1
+
+    if files == 0:
+        return ToolResult(tool="coverage-totals", returncode=2,
+                          stderr=f"no .py files under {source_root}")
+
+    covered = exec_lines - miss_lines
+    data: dict[str, Any] = {
+        "line": {
+            "covered": covered,
+            "executable": exec_lines,
+            "pct": round(covered / exec_lines * 100.0, 2) if exec_lines else 100.0,
+        },
+        "files_measured": files,
+    }
+    if have_branch:
+        bcov = tot_branches - miss_branches
+        data["branch"] = {
+            "covered": bcov,
+            "total": tot_branches,
+            "pct": round(bcov / tot_branches * 100.0, 2) if tot_branches else 100.0,
+        }
+    return ToolResult(tool="coverage-totals", returncode=0, data=data)
 
 
 def run_edges(

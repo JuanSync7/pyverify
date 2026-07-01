@@ -39,10 +39,14 @@
   </div>
 
   <p>
+    <b>line {{ r.whole_line_coverage_pct if r.whole_line_coverage_pct is not none else 'n/a' }}%</b>
+    {% if r.covered_lines is not none %}({{ r.covered_lines }}/{{ r.executable_lines }} lines){% endif %}
+    {% if r.whole_branch_coverage_pct is not none %}&middot; <b>branch {{ r.whole_branch_coverage_pct }}%</b>{% endif %}
+    <span class="muted">(whole codebase)</span> &middot;
     <b>{{ r.total_functions }}</b> functions &middot;
     <b>{{ r.functions_with_line_gaps }}</b> with line gaps
-    (<b>{{ r.boundary_gaps }}</b> boundary) &middot;
-    avg line {{ r.overall_line_coverage_pct if r.overall_line_coverage_pct is not none else 'n/a' }}% &middot;
+    (<b>{{ r.boundary_gaps }}</b> boundary,
+    {{ r.overall_line_coverage_pct if r.overall_line_coverage_pct is not none else 'n/a' }}% avg) &middot;
     <b>{{ r.cross_package_edges }}</b> call-graph edges &middot;
     mutation {{ (r.mutation_kill_rate*100)|round(0) if r.mutation_kill_rate is not none else 'n/a' }}% &middot;
     <b>{{ r.weak_tests }}</b> weak tests

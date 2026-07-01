@@ -45,7 +45,7 @@ def build_unified_report(state: EngineState, config: Config) -> UnifiedCoverageR
     # --- line dimension (gaps only list functions below 100%) -------------
     for g in coverage.get("gaps", []):
         is_boundary = bool(g.get("is_boundary"))
-        tier = "critical" if is_boundary else "standard"
+        tier = thresholds.tier_for(is_boundary=is_boundary, module=g.get("module", ""))
         target = thresholds.line_target(tier)
         pct = float(g.get("coverage_pct", 0.0))
         k = _key(g.get("module", "?"), g.get("function_name", "?"))
@@ -112,6 +112,16 @@ def build_unified_report(state: EngineState, config: Config) -> UnifiedCoverageR
     ]
 
     # --- headline metrics + dimension rollups ----------------------------
+    # whole-codebase coverage (the honest number) comes from coverage.py totals;
+    # the gap-function average below is a secondary, clearly-labelled stat.
+    totals = state.get("coverage_totals") or {}
+    totals_line = totals.get("line") or {}
+    totals_branch = totals.get("branch") or {}
+    whole_line = totals_line.get("pct")
+    whole_branch = totals_branch.get("pct")
+    covered_lines = totals_line.get("covered")
+    executable_lines = totals_line.get("executable")
+
     line_pcts = [f.line_coverage_pct for f in funcs.values() if f.line_coverage_pct is not None]
     overall_line = round(sum(line_pcts) / len(line_pcts), 2) if line_pcts else None
     line_gaps = sum(1 for f in funcs.values()
@@ -126,12 +136,20 @@ def build_unified_report(state: EngineState, config: Config) -> UnifiedCoverageR
     dims: list[DimensionRollup] = []
     if coverage:
         below = sum(1 for f in funcs.values() if f.line_status == DimensionStatus.failed)
+        if whole_line is not None:
+            head = (f"{whole_line}% line coverage (whole codebase); "
+                    f"{below} below tier target")
+        elif overall_line is not None:
+            head = f"{overall_line}% avg over gap functions; {below} below tier target"
+        else:
+            head = "no line data"
         dims.append(DimensionRollup(
             name="line",
             status=DimensionStatus.failed if below else DimensionStatus.passed,
-            headline=(f"{overall_line}% avg over gap functions; {below} below tier target"
-                      if overall_line is not None else "no line data"),
-            detail={"functions_with_gaps": line_gaps, "boundary_gaps": boundary_gaps},
+            headline=head,
+            detail={"whole_codebase_pct": whole_line,
+                    "gap_function_avg_pct": overall_line,
+                    "functions_with_gaps": line_gaps, "boundary_gaps": boundary_gaps},
         ))
     else:
         dims.append(DimensionRollup(name="line", status=DimensionStatus.not_run,
@@ -143,10 +161,16 @@ def build_unified_report(state: EngineState, config: Config) -> UnifiedCoverageR
         headline=f"{len(edges)} cross-package call edges mapped",
         detail={"edges": len(edges), "new_edges": len(edges_data.get("new_edges", []))},
     ))
+    branch_mapped = len(branch.get("functions", []))
     dims.append(DimensionRollup(
         name="branch",
-        status=DimensionStatus.passed if branch.get("functions") else DimensionStatus.not_run,
-        headline=f"{len(branch.get('functions', []))} functions branch-mapped",
+        status=(DimensionStatus.passed if (whole_branch is not None or branch_mapped)
+                else DimensionStatus.not_run),
+        headline=(f"{whole_branch}% branch coverage (whole codebase); "
+                  f"{branch_mapped} functions branch-mapped"
+                  if whole_branch is not None
+                  else f"{branch_mapped} functions branch-mapped"),
+        detail={"whole_codebase_pct": whole_branch, "functions_branch_mapped": branch_mapped},
     ))
     dims.append(DimensionRollup(
         name="mutation",
@@ -194,6 +218,10 @@ def build_unified_report(state: EngineState, config: Config) -> UnifiedCoverageR
         total_functions=coverage.get("total_functions", len(funcs)),
         functions_with_line_gaps=line_gaps,
         boundary_gaps=boundary_gaps,
+        whole_line_coverage_pct=whole_line,
+        whole_branch_coverage_pct=whole_branch,
+        covered_lines=covered_lines,
+        executable_lines=executable_lines,
         overall_line_coverage_pct=overall_line,
         cross_package_edges=len(edges),
         mutation_kill_rate=overall_kill,

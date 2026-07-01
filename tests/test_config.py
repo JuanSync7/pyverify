@@ -22,6 +22,24 @@ def test_line_target_by_tier():
     assert t.line_target("unknown") == 85.0  # falls back to standard
 
 
+def test_tier_for_classifies():
+    t = Config().thresholds
+    # boundary always wins
+    assert t.tier_for(is_boundary=True, module="pkg.api") == "critical"
+    # no cold_paths configured => everything non-boundary is standard
+    assert t.tier_for(is_boundary=False, module="pkg._internal.util") == "standard"
+
+
+def test_cold_tier_reachable_when_configured():
+    t = Config(thresholds={"cold_paths": ["_internal", "experimental"]}).thresholds
+    assert t.tier_for(is_boundary=False, module="pkg._internal.util") == "cold"
+    assert t.line_target(t.tier_for(is_boundary=False, module="pkg._internal.util")) == 70.0
+    # a configured cold path does not override boundary criticality
+    assert t.tier_for(is_boundary=True, module="pkg._internal.util") == "critical"
+    # unrelated modules stay standard
+    assert t.tier_for(is_boundary=False, module="pkg.core") == "standard"
+
+
 def test_gate_toggle_helpers():
     c = Config()
     # defaults: generate is gated, audit is auto

@@ -63,6 +63,17 @@ def build_audit_graph(config: Config):
             out["log"].append("audit/snapshot: line coverage unavailable "
                               f"({gaps.stderr[:120] or gaps.parse_error})")
 
+        totals = adapters.coverage_totals(root, source)
+        if totals.ok and totals.data is not None:
+            out["coverage_totals"] = totals.data
+            line = totals.data.get("line", {})
+            branch = totals.data.get("branch")
+            msg = (f"audit/snapshot: whole-codebase line {line.get('pct')}% "
+                   f"({line.get('covered')}/{line.get('executable')} lines)")
+            if branch:
+                msg += f", branch {branch.get('pct')}% ({branch.get('covered')}/{branch.get('total')})"
+            out["log"].append(msg)
+
         edges = adapters.run_edges(source, test_path=str(test))
         if edges.ok and edges.data is not None:
             out["edge_report"] = edges.data
@@ -99,7 +110,7 @@ def build_audit_graph(config: Config):
 
         for g in raw_gaps:
             is_boundary = bool(g.get("is_boundary"))
-            tier = "critical" if is_boundary else "standard"
+            tier = thresholds.tier_for(is_boundary=is_boundary, module=g.get("module", ""))
             target = thresholds.line_target(tier)
             pct = float(g.get("coverage_pct", 0.0))
             is_below = pct < target
