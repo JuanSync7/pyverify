@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 import yaml
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -54,6 +54,34 @@ class Thresholds(BaseModel):
         "cold tier reachable; empty means no function is classified cold.",
     )
 
+    @field_validator("line_critical", "line_standard", "line_cold")
+    @classmethod
+    def _is_percent(cls, v: float) -> float:
+        if not 0.0 <= v <= 100.0:
+            raise ValueError("line target must be a percentage in [0, 100]")
+        return v
+
+    @field_validator("mutation_kill_rate", "flakiness_max_fail_rate")
+    @classmethod
+    def _is_rate(cls, v: float) -> float:
+        if not 0.0 <= v <= 1.0:
+            raise ValueError("must be a rate in [0.0, 1.0]")
+        return v
+
+    @field_validator("assertion_score", "edge_coverage_min", "assertion_min")
+    @classmethod
+    def _non_negative(cls, v: float) -> float:
+        if v < 0:
+            raise ValueError("must be non-negative")
+        return v
+
+    @field_validator("flakiness_min_runs")
+    @classmethod
+    def _at_least_one_run(cls, v: int) -> int:
+        if v < 1:
+            raise ValueError("flakiness_min_runs must be >= 1")
+        return v
+
     def line_target(self, tier: str) -> float:
         return {
             "critical": self.line_critical,
@@ -90,6 +118,28 @@ class ModelConfig(BaseModel):
     temperature: float = 0.0
     max_tokens: int = 8000
 
+    @field_validator("provider")
+    @classmethod
+    def _known_provider(cls, v: str) -> str:
+        allowed = {"anthropic", "claude-code", "fake"}
+        if v not in allowed:
+            raise ValueError(f"provider must be one of {sorted(allowed)}")
+        return v
+
+    @field_validator("temperature")
+    @classmethod
+    def _valid_temperature(cls, v: float) -> float:
+        if not 0.0 <= v <= 2.0:
+            raise ValueError("temperature must be in [0.0, 2.0]")
+        return v
+
+    @field_validator("max_tokens")
+    @classmethod
+    def _positive_tokens(cls, v: int) -> int:
+        if v <= 0:
+            raise ValueError("max_tokens must be positive")
+        return v
+
 
 class GenerateConfig(BaseModel):
     """Apply-mode for the generate stage."""
@@ -100,10 +150,32 @@ class GenerateConfig(BaseModel):
     mutation_timeout: float = 30.0  # per-mutant seconds
     generated_subdir: str = "pyverdex_generated"  # under test_root
 
+    @field_validator("restrengthen_attempts", "mutation_max_lines")
+    @classmethod
+    def _positive_counts(cls, v: int, info: Any) -> int:
+        floor = 0 if info.field_name == "restrengthen_attempts" else 1
+        if v < floor:
+            raise ValueError(f"{info.field_name} must be >= {floor}")
+        return v
+
+    @field_validator("mutation_timeout")
+    @classmethod
+    def _positive_timeout(cls, v: float) -> float:
+        if v <= 0:
+            raise ValueError("mutation_timeout must be positive")
+        return v
+
 
 class LoopConfig(BaseModel):
     max_cycles: int = 3  # audit→generate→audit loop bound
     max_gaps_per_cycle: int = 10
+
+    @field_validator("max_cycles", "max_gaps_per_cycle")
+    @classmethod
+    def _at_least_one(cls, v: int) -> int:
+        if v < 1:
+            raise ValueError("must be >= 1")
+        return v
 
 
 class PathsConfig(BaseModel):

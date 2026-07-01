@@ -24,6 +24,7 @@ import json
 import os
 import shutil
 import subprocess
+import time
 from abc import ABC, abstractmethod
 from typing import Callable, Optional
 
@@ -33,12 +34,39 @@ from .config import Config, ModelConfig
 class LLMBackend(ABC):
     name: str = "abstract"
 
-    @abstractmethod
-    def invoke(self, prompt: str, *, system: Optional[str] = None) -> str:
-        """Send a prompt; the backend retains conversational memory itself."""
-
     # diagnostics
     calls: int = 0
+    # transient-failure retry policy (shared by every backend)
+    max_attempts: int = 3
+    retry_base_delay: float = 0.5  # seconds; exponential backoff
+
+    @abstractmethod
+    def _invoke_once(self, prompt: str, *, system: Optional[str] = None) -> str:
+        """One real send; the backend retains conversational memory itself."""
+
+    def invoke(self, prompt: str, *, system: Optional[str] = None) -> str:
+        """Send a prompt with bounded retries on transient failure.
+
+        Any exception from ``_invoke_once`` is retried up to ``max_attempts``
+        with exponential backoff, then re-raised as a single clean error. The
+        ``calls`` counter is bumped only on success. Memory-mutating side effects
+        live in ``_invoke_once`` and happen only after the underlying call
+        succeeds, so a retry never double-records history.
+        """
+        last: Optional[BaseException] = None
+        for attempt in range(1, self.max_attempts + 1):
+            try:
+                result = self._invoke_once(prompt, system=system)
+            except Exception as exc:  # noqa: BLE001 - transient API/CLI failure
+                last = exc
+                if attempt < self.max_attempts:
+                    time.sleep(self.retry_base_delay * (2 ** (attempt - 1)))
+                continue
+            self.calls += 1
+            return result
+        raise RuntimeError(
+            f"{self.name} backend failed after {self.max_attempts} attempt(s): {last}"
+        ) from last
 
 
 class AnthropicBackend(LLMBackend):
@@ -54,14 +82,14 @@ class AnthropicBackend(LLMBackend):
         self._system_sent = False
         self.calls = 0
 
-    def invoke(self, prompt: str, *, system: Optional[str] = None) -> str:
+    def _invoke_once(self, prompt: str, *, system: Optional[str] = None) -> str:
         msgs: list[tuple[str, str]] = []
-        if system and not self._system_sent:
+        send_system = bool(system) and not self._system_sent
+        if send_system and system is not None:
             msgs.append(("system", system))
-            self._system_sent = True
         msgs.extend(self._history)
         msgs.append(("human", prompt))
-        resp = self._chat.invoke(msgs)
+        resp = self._chat.invoke(msgs)  # may raise → retried, no state mutated yet
         content = resp.content
         if isinstance(content, list):
             text = "".join(
@@ -69,9 +97,11 @@ class AnthropicBackend(LLMBackend):
             )
         else:
             text = str(content)
+        # only mutate memory after the call succeeds (so a retry can't double-record)
+        if send_system:
+            self._system_sent = True
         self._history.append(("human", prompt))
         self._history.append(("ai", text))
-        self.calls += 1
         return text
 
 
@@ -85,7 +115,7 @@ class ClaudeCodeBackend(LLMBackend):
         self._bin = shutil.which("claude") or "claude"
         self.calls = 0
 
-    def invoke(self, prompt: str, *, system: Optional[str] = None) -> str:
+    def _invoke_once(self, prompt: str, *, system: Optional[str] = None) -> str:
         prompt = prompt.replace("\x00", "")  # NUL bytes are illegal in argv
         cmd = [self._bin, "-p", prompt, "--output-format", "json"]
         if self._model:
@@ -120,9 +150,8 @@ class FakeBackend(LLMBackend):
         self.prompts: list[str] = []
         self.calls = 0
 
-    def invoke(self, prompt: str, *, system: Optional[str] = None) -> str:
+    def _invoke_once(self, prompt: str, *, system: Optional[str] = None) -> str:
         self.prompts.append(prompt)
-        self.calls += 1
         return self._responder(prompt)
 
 
