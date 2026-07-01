@@ -37,6 +37,12 @@ export interface Report {
   total_functions: number;
   functions_with_line_gaps: number;
   boundary_gaps: number;
+  // whole-codebase coverage (the honest headline); overall_line_coverage_pct is
+  // the legacy average over gap functions only, kept as a labelled secondary stat.
+  whole_line_coverage_pct: number | null;
+  whole_branch_coverage_pct: number | null;
+  covered_lines: number | null;
+  executable_lines: number | null;
   overall_line_coverage_pct: number | null;
   cross_package_edges: number;
   mutation_kill_rate: number | null;
