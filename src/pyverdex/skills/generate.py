@@ -56,6 +56,27 @@ def _valid_python(code: str) -> bool:
         return False
 
 
+def _assertion_weakness(code: str, min_assertions: int) -> str:
+    """Cheap pre-mutation screen. Return a reason when the test is obviously
+    weak — too few assertions, or every assertion is a constant tautology like
+    ``assert True`` — else ``""``. Mirrors the assertion_quality heuristics
+    without a per-file subprocess, so mutation budget is spent only on tests that
+    could plausibly be strong."""
+    try:
+        tree = ast.parse(code)
+    except SyntaxError:
+        return ""  # handled by _valid_python upstream
+    asserts = [n for n in ast.walk(tree) if isinstance(n, ast.Assert)]
+    if len(asserts) < min_assertions:
+        return (f"only {len(asserts)} assertion(s); need at least "
+                f"{min_assertions} meaningful checks.")
+    tautological = sum(1 for a in asserts
+                       if isinstance(a.test, ast.Constant) and bool(a.test.value))
+    if tautological == len(asserts):
+        return "every assertion is a constant tautology (e.g. `assert True`)."
+    return ""
+
+
 def _green_run(root: Path, test_path: Path, timeout: float = 120.0) -> tuple[bool, str]:
     """Run pytest on one test file; (passed, short_output). rc 0 == green."""
     try:
@@ -174,6 +195,9 @@ def build_generate_graph(config: Config, backend: LLMBackend | None = None):
             elif not mod_file.exists():
                 status = "module-not-found"
                 break
+            elif weak := _assertion_weakness(code, config.thresholds.assertion_min):
+                # cheap screen before spending mutation budget on a doomed test
+                status, feedback = "weak-assertions", weak
             else:
                 res = adapters.run_mutation(
                     mod_file, function=fn, max_lines=gen.mutation_max_lines,

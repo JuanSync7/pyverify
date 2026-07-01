@@ -36,19 +36,32 @@ def build_integrate_graph(config: Config, backend: LLMBackend | None = None):
             references=("testcontainers-patterns", "real-api-testing"),
         )
         proposals: list[dict] = []
+        errors: list[str] = []
         for s in strategies[: config.loop.max_gaps_per_cycle]:
-            cand = s["candidates"][0]
-            code = backend.invoke(
-                f"Propose a real-service integration test for boundary function "
-                f"`{cand['boundary_fn']}` in `{cand['module']}` (category "
-                f"{cand['category']}, lifecycle pattern '{cand['pattern']}'). "
-                "Output only the test code.",
-                system=system,
-            )
+            # one bad candidate or LLM failure must not abort the whole stage
+            try:
+                cand = s["candidates"][0]
+                code = backend.invoke(
+                    f"Propose a real-service integration test for boundary function "
+                    f"`{cand['boundary_fn']}` in `{cand['module']}` (category "
+                    f"{cand['category']}, lifecycle pattern '{cand['pattern']}'). "
+                    "Output only the test code.",
+                    system=system,
+                )
+            except Exception as exc:  # noqa: BLE001
+                fn = (s.get("candidates") or [{}])[0].get("boundary_fn", "?")
+                errors.append(f"integrate/convert: {fn} failed: {exc}")
+                continue
             proposals.append({**cand, "proposed_test": code})
         merged = [*state.get("generated", []), *proposals]
-        return {"generated": merged,
-                "log": [f"integrate/convert: proposed {len(proposals)} real-service tests"]}
+        out: dict = {
+            "generated": merged,
+            "log": [f"integrate/convert: proposed {len(proposals)} real-service tests"
+                    + (f", {len(errors)} failed" if errors else "")],
+        }
+        if errors:
+            out["errors"] = errors
+        return out
 
     def gate(state: EngineState) -> dict:
         strategies = state.get("integration_strategies", [])
