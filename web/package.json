@@ -8,7 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "gen:docs": "vite-node scripts/gen-steps-doc.ts"
   },
   "dependencies": {
     "@xterm/addon-fit": "^0.10.0",
