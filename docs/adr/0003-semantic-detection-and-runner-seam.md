@@ -42,10 +42,13 @@ module to its source file, parses the AST, and classifies by the frameworks it
 
 | Imports (any of) | Category | Lifecycle pattern (via `_PATTERN`) |
 |---|---|---|
-| sqlalchemy, psycopg2/psycopg, pymongo, asyncpg, sqlite3, django.db, mysql, motor, redis | `db` | transaction-rollback |
-| celery, kombu, pika, dramatiq, kafka, aiokafka | `queue` | celery-test-harness |
+| sqlalchemy, psycopg2, psycopg, pymongo, asyncpg, sqlite3, django.db, mysql, motor, aiomysql, aiosqlite, redis | `db` | transaction-rollback |
+| celery, kombu, pika, dramatiq, kafka, confluent_kafka, aiokafka | `queue` | celery-test-harness |
 | click, typer, argparse | `cli` | subprocess-capture |
 | fastapi, flask, starlette, requests, httpx, aiohttp, boto3, openai, urllib3, grpc | `api` | vcrpy |
+
+The canonical, authoritative list is `_FRAMEWORK_SIGNS` in
+`src/pyverdex/skills/_detect.py`; this table mirrors it.
 
 `evaluate` now calls `_classify_category = detect_framework(...) or _category(...)`
 — semantic first, the **filename heuristic as fallback** when the file can't be
